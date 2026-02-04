@@ -29,17 +29,17 @@ internal object DatabaseUtils {
         config.password?.let { hikariConfig.password = it }
 
         config.pool?.let { pool ->
-            hikariConfig.connectionTimeout = pool.connectionTimeout.inWholeMilliseconds
-            hikariConfig.idleTimeout = pool.idleTimeout.inWholeMilliseconds
-            hikariConfig.maxLifetime = pool.maxLifetime.inWholeMilliseconds
-            hikariConfig.keepaliveTime = pool.keepaliveTime.inWholeMilliseconds
+            hikariConfig.connectionTimeout = pool.connectionTimeout.toMillis()
+            hikariConfig.idleTimeout = pool.idleTimeout.toMillis()
+            hikariConfig.maxLifetime = pool.maxLifetime.toMillis()
+            hikariConfig.keepaliveTime = pool.keepaliveTime.toMillis()
             hikariConfig.maximumPoolSize = pool.maximumPoolSize
             pool.minimumIdle?.let { hikariConfig.minimumIdle = it }
             pool.leakDetectionThreshold?.let {
-                hikariConfig.leakDetectionThreshold = it.inWholeMilliseconds
+                hikariConfig.leakDetectionThreshold = it.toMillis()
             }
             pool.initializationFailTimeout?.let {
-                hikariConfig.initializationFailTimeout = it.inWholeMilliseconds
+                hikariConfig.initializationFailTimeout = it.toMillis()
             }
         }
 

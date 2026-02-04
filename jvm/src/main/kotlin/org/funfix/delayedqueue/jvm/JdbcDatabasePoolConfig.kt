@@ -1,9 +1,10 @@
 package org.funfix.delayedqueue.jvm
 
-import kotlin.time.Duration
+import java.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.toJavaDuration
 
 /**
  * Configuration for tuning the Hikari connection pool.
@@ -19,10 +20,10 @@ import kotlin.time.Duration.Companion.seconds
  */
 @JvmRecord
 public data class JdbcDatabasePoolConfig(
-    val connectionTimeout: Duration = 30.seconds,
-    val idleTimeout: Duration = 10.minutes,
-    val maxLifetime: Duration = 30.minutes,
-    val keepaliveTime: Duration = 0.milliseconds,
+    val connectionTimeout: Duration = 30.seconds.toJavaDuration(),
+    val idleTimeout: Duration = 10.minutes.toJavaDuration(),
+    val maxLifetime: Duration = 30.minutes.toJavaDuration(),
+    val keepaliveTime: Duration = 0.milliseconds.toJavaDuration(),
     val maximumPoolSize: Int = 10,
     val minimumIdle: Int? = null,
     val leakDetectionThreshold: Duration? = null,
