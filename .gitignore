@@ -32,10 +32,11 @@ replay_pid*
 # Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
 .kotlin/
 
-### IDEs ###
+### IDEs && tools ###
 .idea/
 *.iml
 .vscode/
+.sdkmanrc
 
 ### Mac OS ###
 .DS_Store
