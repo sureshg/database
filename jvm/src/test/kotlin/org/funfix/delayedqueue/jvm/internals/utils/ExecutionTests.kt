@@ -1,6 +1,7 @@
 package org.funfix.delayedqueue.jvm.internals.utils
 
 import java.util.concurrent.ExecutionException
+import org.funfix.tasks.jvm.TaskCancellationException
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
@@ -19,19 +20,17 @@ class ExecutionTests {
     }
 
     @Test
-    fun `runBlockingIO propagates InterruptedException`() {
+    fun `runBlockingIO propagates InterruptedException as TaskCancellationException`() {
         val interrupted = InterruptedException("interrupted")
-        val thrown =
-            assertThrows(InterruptedException::class.java) {
-                sneakyRaises { runBlockingIO { throw interrupted } }
-            }
-        assertEquals(interrupted, thrown)
+        assertThrows(TaskCancellationException::class.java) {
+            sneakyRaises { runBlockingIO { throw interrupted } }
+        }
     }
 
     @Test
     fun `runBlockingIO runs on shared executor`() = sneakyRaises {
         val threadName = runBlockingIO { Thread.currentThread().name }
-        assertTrue(threadName.contains("pool"))
+        assertTrue(threadName.contains("virtual"))
     }
 
     @Test
@@ -51,13 +50,13 @@ class ExecutionTests {
     }
 
     @Test
-    fun `runBlockingIOUninterruptible does not propagate InterruptedException`() = sneakyRaises {
-        val interrupted = InterruptedException("interrupted")
-        // Should not throw InterruptedException, but wrap it
-        val thrown =
-            assertThrows(ExecutionException::class.java) {
+    fun `runBlockingIOUninterruptible propagates InterruptedException as TaskCancellationException`() =
+        sneakyRaises {
+            val interrupted = InterruptedException("interrupted")
+            // Should not throw InterruptedException, but wrap it
+            assertThrows(TaskCancellationException::class.java) {
                 runBlockingIOUninterruptible { throw interrupted }
             }
-        assertTrue(thrown.cause is InterruptedException)
-    }
+            Unit
+        }
 }

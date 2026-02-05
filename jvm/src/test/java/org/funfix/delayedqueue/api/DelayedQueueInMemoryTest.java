@@ -129,8 +129,8 @@ public class DelayedQueueInMemoryTest {
         var envelope = queue.tryPoll();
         
         assertNotNull(envelope);
-        assertEquals("payload1", envelope.getPayload());
-        assertEquals(DeliveryType.FIRST_DELIVERY, envelope.getDeliveryType());
+        assertEquals("payload1", envelope.payload());
+        assertEquals(DeliveryType.FIRST_DELIVERY, envelope.deliveryType());
     }
     
     @Test
@@ -154,9 +154,9 @@ public class DelayedQueueInMemoryTest {
         assertNotNull(msg1);
         assertNotNull(msg2);
         assertNotNull(msg3);
-        assertEquals("payload1", msg1.getPayload());
-        assertEquals("payload2", msg2.getPayload());
-        assertEquals("payload3", msg3.getPayload());
+        assertEquals("payload1", msg1.payload());
+        assertEquals("payload2", msg2.payload());
+        assertEquals("payload3", msg3.payload());
     }
     
     @Test
@@ -169,15 +169,15 @@ public class DelayedQueueInMemoryTest {
         queue.offerOrUpdate("key1", "payload1", scheduleAt);
         var envelope1 = queue.tryPoll();
         assertNotNull(envelope1);
-        assertEquals(DeliveryType.FIRST_DELIVERY, envelope1.getDeliveryType());
+        assertEquals(DeliveryType.FIRST_DELIVERY, envelope1.deliveryType());
         
         // Don't acknowledge, advance time past timeout
         clock.advance(Duration.ofSeconds(6));
         
         var envelope2 = queue.tryPoll();
         assertNotNull(envelope2);
-        assertEquals("payload1", envelope2.getPayload());
-        assertEquals(DeliveryType.REDELIVERY, envelope2.getDeliveryType());
+        assertEquals("payload1", envelope2.payload());
+        assertEquals(DeliveryType.REDELIVERY, envelope2.deliveryType());
     }
     
     @Test
@@ -192,7 +192,7 @@ public class DelayedQueueInMemoryTest {
         var envelope = queue.tryPollMany(10);
         
         assertNotNull(envelope);
-        assertTrue(envelope.getPayload().isEmpty());
+        assertTrue(envelope.payload().isEmpty());
     }
     
     @Test
@@ -213,7 +213,7 @@ public class DelayedQueueInMemoryTest {
         var envelope = queue.tryPollMany(2);
         
         assertNotNull(envelope);
-        assertEquals(2, envelope.getPayload().size());
+        assertEquals(2, envelope.payload().size());
     }
     
     @Test
@@ -233,8 +233,8 @@ public class DelayedQueueInMemoryTest {
         var envelope = queue.tryPollMany(10);
         
         assertNotNull(envelope);
-        assertEquals(1, envelope.getPayload().size());
-        assertEquals("payload1", envelope.getPayload().getFirst());
+        assertEquals(1, envelope.payload().size());
+        assertEquals("payload1", envelope.payload().getFirst());
     }
 
     @Test
@@ -249,7 +249,7 @@ public class DelayedQueueInMemoryTest {
 
         var first = queue.tryPoll();
         assertNotNull(first);
-        assertEquals(DeliveryType.FIRST_DELIVERY, first.getDeliveryType());
+        assertEquals(DeliveryType.FIRST_DELIVERY, first.deliveryType());
 
         // Don't acknowledge, advance past timeout to trigger redelivery
         clock.advance(Duration.ofSeconds(6));
@@ -257,8 +257,8 @@ public class DelayedQueueInMemoryTest {
         var batch = queue.tryPollMany(10);
 
         assertNotNull(batch);
-        assertEquals(2, batch.getPayload().size());
-        assertEquals(DeliveryType.REDELIVERY, batch.getDeliveryType());
+        assertEquals(2, batch.payload().size());
+        assertEquals(DeliveryType.REDELIVERY, batch.deliveryType());
     }
     
     // ========== Acknowledgment ==========
@@ -326,7 +326,7 @@ public class DelayedQueueInMemoryTest {
         // The updated message should still be available
         var envelope2 = queue.tryPoll();
         assertNotNull(envelope2);
-        assertEquals("payload2", envelope2.getPayload());
+        assertEquals("payload2", envelope2.payload());
     }
     
     @Test
@@ -345,7 +345,7 @@ public class DelayedQueueInMemoryTest {
         
         var envelope = queue.tryPollMany(10);
         assertNotNull(envelope);
-        assertEquals(3, envelope.getPayload().size());
+        assertEquals(3, envelope.payload().size());
         
         envelope.acknowledge();
         
@@ -369,12 +369,12 @@ public class DelayedQueueInMemoryTest {
         var msg = queue.read("key1");
         
         assertNotNull(msg);
-        assertEquals("payload1", msg.getPayload());
+        assertEquals("payload1", msg.payload());
         
         // Message should still be available
         var envelope = queue.tryPoll();
         assertNotNull(envelope);
-        assertEquals("payload1", envelope.getPayload());
+        assertEquals("payload1", envelope.payload());
     }
     
     @Test
@@ -427,7 +427,7 @@ public class DelayedQueueInMemoryTest {
                 try {
                     var envelope = queue.tryPoll();
                     if (envelope == null) break;
-                    polled.add(envelope.getPayload());
+                    polled.add(envelope.payload());
                     envelope.acknowledge();
                 } catch (Exception e) {
                     break;
@@ -458,7 +458,7 @@ public class DelayedQueueInMemoryTest {
         var thread = new Thread(() -> {
             try {
                 var envelope = queue.poll();
-                if (envelope.getPayload().equals("payload1")) {
+                if (envelope.payload().equals("payload1")) {
                     polled.incrementAndGet();
                 }
                 envelope.acknowledge();
@@ -507,7 +507,7 @@ public class DelayedQueueInMemoryTest {
         clock.setTime(scheduleAt);
         var envelope = queue.tryPoll();
         assertNotNull(envelope);
-        assertEquals("payload1", envelope.getPayload());
+        assertEquals("payload1", envelope.payload());
     }
     
     @Test
@@ -525,15 +525,15 @@ public class DelayedQueueInMemoryTest {
         queue.offerOrUpdate("key3", "payload3", base.plusSeconds(30));
         
         clock.setTime(base.plusSeconds(15));
-        assertEquals("payload1", Objects.requireNonNull(queue.tryPoll()).getPayload());
+        assertEquals("payload1", Objects.requireNonNull(queue.tryPoll()).payload());
         assertNull(queue.tryPoll());
         
         clock.setTime(base.plusSeconds(25));
-        assertEquals("payload2", Objects.requireNonNull(queue.tryPoll()).getPayload());
+        assertEquals("payload2", Objects.requireNonNull(queue.tryPoll()).payload());
         assertNull(queue.tryPoll());
         
         clock.setTime(base.plusSeconds(35));
-        assertEquals("payload3", Objects.requireNonNull(queue.tryPoll()).getPayload());
+        assertEquals("payload3", Objects.requireNonNull(queue.tryPoll()).payload());
         assertNull(queue.tryPoll());
     }
 }

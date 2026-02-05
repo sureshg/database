@@ -44,11 +44,10 @@ The formatting rules are configured in the shared convention plugin (`buildSrc/s
 delayedqueue/
 ├── buildSrc/                    # Convention plugins for shared build logic
 │   └── src/main/kotlin/
-│       ├── delayedqueue.base.gradle.kts      # Base Kotlin + Detekt + Dokka
+│       ├── delayedqueue.base.gradle.kts      # Base Kotlin + Dokka
 │       └── delayedqueue.publish.gradle.kts   # Maven Central publishing
 ├── jvm/                         # JVM subproject (delayedqueue-jvm)
 │   └── src/main/kotlin/
-└── detekt.yml                   # Detekt configuration with library ruleset
 ```
 
 ## Build Configuration
@@ -67,11 +66,6 @@ delayedqueue/
 
 ### Code Quality
 
-#### Detekt
-- **Ruleset**: [Library ruleset](https://detekt.dev/docs/rules/libraries)
-- **Configuration**: See `detekt.yml`
-- All rules enforce best practices for library development
-
 #### Dokka
 - **Format**: Javadoc (for Java compatibility)
 - **Generation**: Automated javadoc JAR creation
@@ -84,9 +78,6 @@ delayedqueue/
 
 # Build specific subproject
 ./gradlew :jvm:build
-
-# Run detekt
-./gradlew detekt
 
 # Generate documentation
 ./gradlew dokkaJavadoc

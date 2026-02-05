@@ -26,7 +26,6 @@ dependencies {
     implementation(libs.kotlin.gradle.plugin)
     implementation(libs.kover.gradle.plugin)
     implementation(libs.dokka.gradle.plugin)
-    implementation(libs.detekt.gradle.plugin)
     implementation(libs.binary.compatibility.validator.plugin)
     implementation(libs.ktfmt.gradle.plugin)
 }

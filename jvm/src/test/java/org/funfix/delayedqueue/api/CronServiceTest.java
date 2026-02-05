@@ -38,13 +38,13 @@ public class CronServiceTest {
         clock.advance(Duration.ofSeconds(15));
         var envelope1 = queue.tryPoll();
         assertNotNull(envelope1);
-        assertEquals("msg1", envelope1.getPayload());
+        assertEquals("msg1", envelope1.payload());
         envelope1.acknowledge();
         
         clock.advance(Duration.ofSeconds(10));
         var envelope2 = queue.tryPoll();
         assertNotNull(envelope2);
-        assertEquals("msg2", envelope2.getPayload());
+        assertEquals("msg2", envelope2.payload());
         envelope2.acknowledge();
     }
     
@@ -131,7 +131,7 @@ public class CronServiceTest {
         clock.advance(Duration.ofSeconds(10));
         var envelope = queue.tryPoll();
         assertNotNull(envelope);
-        assertEquals("msg-b", envelope.getPayload());
+        assertEquals("msg-b", envelope.payload());
         envelope.acknowledge();
         assertNull(queue.tryPoll());
     }
@@ -167,6 +167,7 @@ public class CronServiceTest {
         );
         var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
 
+        //noinspection resource
         assertThrows(IllegalArgumentException.class, () -> queue.getCron().install(
             configHash,
             "prefix-",
@@ -202,6 +203,7 @@ public class CronServiceTest {
             clock
         );
 
+        //noinspection resource
         assertThrows(IllegalArgumentException.class, () -> queue.getCron().installPeriodicTick(
             "key",
             Duration.ZERO,
@@ -366,7 +368,7 @@ public class CronServiceTest {
         clock.advance(Duration.ofSeconds(15));
         var env1 = queue.tryPoll();
         assertNotNull(env1);
-        assertEquals("msg1", env1.getPayload());
+        assertEquals("msg1", env1.payload());
         env1.acknowledge();
         
         // Second message not yet available
@@ -376,7 +378,7 @@ public class CronServiceTest {
         clock.advance(Duration.ofSeconds(10));
         var env2 = queue.tryPoll();
         assertNotNull(env2);
-        assertEquals("msg2", env2.getPayload());
+        assertEquals("msg2", env2.payload());
         env2.acknowledge();
     }
     
@@ -505,14 +507,14 @@ public class CronServiceTest {
 
         var envelope = queue.tryPoll();
         assertNotNull(envelope);
-        assertEquals(DeliveryType.FIRST_DELIVERY, envelope.getDeliveryType());
+        assertEquals(DeliveryType.FIRST_DELIVERY, envelope.deliveryType());
 
         queue.getCron().installTick(configHash, "cron-", List.of());
 
         clock.advance(Duration.ofSeconds(6));
         var redelivery = queue.tryPoll();
         assertNotNull(redelivery);
-        assertEquals(DeliveryType.REDELIVERY, redelivery.getDeliveryType());
+        assertEquals(DeliveryType.REDELIVERY, redelivery.deliveryType());
     }
 
     @Test
@@ -522,7 +524,7 @@ public class CronServiceTest {
         var queue = DelayedQueueInMemory.<String>create(timeConfig, "test-source", clock);
         var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
 
-        try (var handle = queue.getCron().install(
+        try (var ignored = queue.getCron().install(
             configHash,
             "loop-",
             Duration.ofMillis(10),
@@ -533,19 +535,20 @@ public class CronServiceTest {
             while (envelope == null && System.nanoTime() < waitUntil) {
                 envelope = queue.tryPoll();
                 if (envelope == null) {
+                    //noinspection BusyWait
                     Thread.sleep(5);
                 }
             }
 
             assertNotNull(envelope);
-            assertEquals(DeliveryType.FIRST_DELIVERY, envelope.getDeliveryType());
+            assertEquals(DeliveryType.FIRST_DELIVERY, envelope.deliveryType());
 
             clock.advance(Duration.ofMillis(60));
             Thread.sleep(30);
 
             var redelivery = queue.tryPoll();
             assertNotNull(redelivery);
-            assertEquals(DeliveryType.REDELIVERY, redelivery.getDeliveryType());
+            assertEquals(DeliveryType.REDELIVERY, redelivery.deliveryType());
         }
     }
     

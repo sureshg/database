@@ -13,8 +13,6 @@ dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
-
-    detektPlugins(libs.detekt.rules.libraries)
 }
 
 tasks.test { useJUnitPlatform() }

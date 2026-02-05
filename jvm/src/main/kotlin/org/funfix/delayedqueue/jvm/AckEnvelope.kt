@@ -15,7 +15,7 @@ import java.time.Instant
  * ```java
  * AckEnvelope<String> envelope = queue.poll();
  * try {
- *     processMessage(envelope.getPayload());
+ *     processMessage(envelope.payload());
  *     envelope.acknowledge();
  * } catch (Exception e) {
  *     // Don't acknowledge - message will be redelivered
@@ -31,6 +31,7 @@ import java.time.Instant
  * @property acknowledge function to call to acknowledge successful processing, and delete the
  *   message from the queue
  */
+@JvmRecord
 public data class AckEnvelope<out A>(
     val payload: A,
     val messageId: MessageId,
