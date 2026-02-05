@@ -23,7 +23,7 @@ mavenPublishing {
     signAllPublications()
 
     pom {
-        inceptionYear.set("2024")
+        inceptionYear.set("2026")
         url = "https://github.com/funfix/delayedqueue"
         licenses {
             license {

@@ -4,6 +4,13 @@ plugins {
     id("delayedqueue.versions")
 }
 
+mavenPublishing {
+    pom {
+        name.set("Funfix DelayedQueue (JVM)")
+        description.set("A delayed, high-performance FIFO queue for the JVM, powered by your favorite RDBMS.")
+    }
+}
+
 dependencies {
     implementation(libs.funfix.tasks.jvm)
     implementation(libs.hikaricp)
