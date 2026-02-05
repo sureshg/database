@@ -1,7 +1,6 @@
 package org.funfix.delayedqueue.jvm
 
 import java.time.Instant
-import java.util.List
 
 /** Generates a batch of cron messages based on the current instant. */
 public fun interface CronMessageBatchGenerator<A> {

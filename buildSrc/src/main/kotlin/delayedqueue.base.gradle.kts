@@ -1,11 +1,13 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.dokka.gradle.DokkaExtension
 
 plugins {
     id("org.jetbrains.kotlin.jvm")
     id("io.gitlab.arturbosch.detekt")
     id("org.jetbrains.dokka")
+    id("org.jetbrains.dokka-javadoc")
     id("com.ncorti.ktfmt.gradle")
     id("org.jetbrains.kotlinx.kover")
 }
@@ -49,8 +51,15 @@ tasks.withType<KotlinCompile>().configureEach {
     }
 }
 
+extensions.configure<DokkaExtension>("dokka") {
+    dokkaSourceSets.configureEach {
+        jdkVersion.set(21)
+        skipEmptyPackages.set(true)
+    }
+}
+
 tasks.named<Jar>("javadocJar") {
-    from(tasks.named("dokkaJavadoc"))
+    from(tasks.named("dokkaGeneratePublicationJavadoc"))
 }
 
 detekt {

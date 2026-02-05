@@ -1,10 +1,12 @@
+@file:Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+
 package org.funfix.delayedqueue.jvm
 
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.List
+import java.util.Collections
 
 /**
  * Configuration for daily recurring scheduled messages with timezone support.
@@ -54,7 +56,7 @@ public data class DailyCronSchedule(
             }
         }
 
-        return java.util.Collections.unmodifiableList(result)
+        return Collections.unmodifiableList(result)
     }
 
     private fun getNextTime(now: Instant, sortedHours: List<LocalTime>): Instant {

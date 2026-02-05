@@ -33,7 +33,7 @@ constructor(val payload: A, val scheduleAt: Instant, val scheduleAtActual: Insta
         canUpdate: Boolean,
     ): ScheduledMessage<A> =
         ScheduledMessage(
-            key = CronMessage.key(configHash, keyPrefix, scheduleAt),
+            key = key(configHash, keyPrefix, scheduleAt),
             payload = payload,
             scheduleAt = scheduleAtActual ?: scheduleAt,
             canUpdate = canUpdate,

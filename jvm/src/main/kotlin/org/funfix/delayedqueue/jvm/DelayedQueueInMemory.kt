@@ -3,10 +3,13 @@ package org.funfix.delayedqueue.jvm
 import java.time.Duration
 import java.time.Instant
 import java.util.ArrayList
+import java.util.Collections
 import java.util.TreeSet
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
+import org.funfix.tasks.jvm.Task
 
 /**
  * In-memory implementation of [DelayedQueue] using concurrent data structures.
@@ -102,8 +105,8 @@ private constructor(
     }
 
     override fun <In> offerBatch(
-        messages: java.util.List<BatchedMessage<In, A>>
-    ): java.util.List<BatchedReply<In, A>> {
+        messages: List<BatchedMessage<In, A>>
+    ): List<BatchedReply<In, A>> {
         val replies = ArrayList<BatchedReply<In, A>>(messages.size)
         for (batched in messages) {
             val outcome =
@@ -122,7 +125,7 @@ private constructor(
                 }
             replies.add(BatchedReply(batched.input, batched.message, outcome))
         }
-        return java.util.Collections.unmodifiableList(replies)
+        return Collections.unmodifiableList(replies)
     }
 
     override fun tryPoll(): AckEnvelope<A>? {
@@ -157,7 +160,7 @@ private constructor(
                     timestamp = now,
                     source = first.ackEnvSource,
                     deliveryType = first.deliveryType,
-                    acknowledgeHandler = AckHandler { acknowledgeMessage(first) },
+                    acknowledgeHandler = { acknowledgeMessage(first) },
                 )
             } else {
                 null
@@ -165,7 +168,7 @@ private constructor(
         }
     }
 
-    override fun tryPollMany(batchMaxSize: Int): AckEnvelope<java.util.List<A>> {
+    override fun tryPollMany(batchMaxSize: Int): AckEnvelope<List<A>> {
         val messages = ArrayList<A>()
         val acks = ArrayList<AckHandler>()
         var source = ackEnvSource
@@ -186,12 +189,12 @@ private constructor(
         val now = clock.now()
 
         return AckEnvelope(
-            payload = java.util.Collections.unmodifiableList(messages),
+            payload = Collections.unmodifiableList(messages),
             messageId = messageId,
             timestamp = now,
             source = source,
             deliveryType = deliveryType,
-            acknowledgeHandler = AckHandler { acks.forEach { it.acknowledge() } },
+            acknowledgeHandler = { acks.forEach { it.acknowledge() } },
         )
     }
 
@@ -206,7 +209,7 @@ private constructor(
                 // Wait for a message or timeout
                 condition.await(
                     timeConfig.pollPeriod.toNanos(),
-                    java.util.concurrent.TimeUnit.NANOSECONDS,
+                    TimeUnit.NANOSECONDS,
                 )
             }
         }
@@ -241,7 +244,7 @@ private constructor(
                 timestamp = now,
                 source = first.ackEnvSource,
                 deliveryType = first.deliveryType,
-                acknowledgeHandler = AckHandler { acknowledgeMessage(first) },
+                acknowledgeHandler = { acknowledgeMessage(first) },
             )
         }
         return null
@@ -258,7 +261,7 @@ private constructor(
                     timestamp = now,
                     source = msg.ackEnvSource,
                     deliveryType = msg.deliveryType,
-                    acknowledgeHandler = AckHandler { acknowledgeMessage(msg) },
+                    acknowledgeHandler = { acknowledgeMessage(msg) },
                 )
             } else {
                 null
@@ -326,7 +329,7 @@ private constructor(
             override fun installTick(
                 configHash: ConfigHash,
                 keyPrefix: String,
-                messages: java.util.List<CronMessage<A>>,
+                messages: List<CronMessage<A>>,
             ) {
                 deleteOldCron(keyPrefix)
                 for (cronMsg in messages) {
@@ -366,15 +369,14 @@ private constructor(
                     configHash = ConfigHash.fromDailyCron(schedule),
                     keyPrefix = keyPrefix,
                     scheduleInterval = schedule.scheduleInterval,
-                    generateMany =
-                        CronMessageBatchGenerator { now ->
-                            val times = schedule.getNextTimes(now)
-                            val batch = ArrayList<CronMessage<A>>(times.size)
-                            for (time in times) {
-                                batch.add(generator.generate(time))
-                            }
-                            java.util.Collections.unmodifiableList(batch)
-                        },
+                    generateMany = { now ->
+                        val times = schedule.getNextTimes(now)
+                        val batch = ArrayList<CronMessage<A>>(times.size)
+                        for (time in times) {
+                            batch.add(generator.generate(time))
+                        }
+                        Collections.unmodifiableList(batch)
+                    },
                 )
             }
 
@@ -388,21 +390,20 @@ private constructor(
                     configHash = ConfigHash.fromPeriodicTick(period),
                     keyPrefix = keyPrefix,
                     scheduleInterval = scheduleInterval,
-                    generateMany =
-                        CronMessageBatchGenerator { now ->
-                            val periodMillis = period.toMillis()
-                            val timestamp =
-                                Instant.ofEpochMilli(
-                                    ((now.toEpochMilli() + periodMillis) / periodMillis) *
+                    generateMany = { now ->
+                        val periodMillis = period.toMillis()
+                        val timestamp =
+                            Instant.ofEpochMilli(
+                                ((now.toEpochMilli() + periodMillis) / periodMillis) *
                                         periodMillis
-                                )
-                            java.util.List.of(
-                                CronMessage(
-                                    payload = generator.generate(timestamp),
-                                    scheduleAt = timestamp,
-                                )
                             )
-                        },
+                        listOf(
+                            CronMessage(
+                                payload = generator.generate(timestamp),
+                                scheduleAt = timestamp,
+                            )
+                        )
+                    },
                 )
             }
 
@@ -413,7 +414,7 @@ private constructor(
                 generateMany: CronMessageBatchGenerator<A>,
             ): AutoCloseable {
                 val task =
-                    org.funfix.tasks.jvm.Task.fromBlockingIO {
+                    Task.fromBlockingIO {
                         var isFirst = true
                         while (!Thread.interrupted()) {
                             try {
@@ -442,7 +443,7 @@ private constructor(
                                 }
 
                                 Thread.sleep(scheduleInterval.toMillis())
-                            } catch (e: InterruptedException) {
+                            } catch (_: InterruptedException) {
                                 Thread.currentThread().interrupt()
                                 break
                             }
@@ -450,7 +451,6 @@ private constructor(
                     }
 
                 val fiber = task.runFiber()
-
                 return AutoCloseable {
                     fiber.cancel()
                     fiber.joinBlockingUninterruptible()

@@ -29,7 +29,6 @@ import java.time.Instant
  * @property source identifier for the queue or source system
  * @property deliveryType indicates whether this is the first delivery or a redelivery
  */
-@NonSerializable
 public data class AckEnvelope<out A>(
     val payload: A,
     val messageId: MessageId,

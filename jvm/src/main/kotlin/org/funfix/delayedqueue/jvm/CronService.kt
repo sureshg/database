@@ -2,7 +2,6 @@ package org.funfix.delayedqueue.jvm
 
 import java.sql.SQLException
 import java.time.Duration
-import java.util.List
 
 /**
  * Service for installing cron-like periodic schedules in a delayed queue.
