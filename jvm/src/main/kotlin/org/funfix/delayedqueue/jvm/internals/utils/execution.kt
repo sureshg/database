@@ -9,7 +9,6 @@ internal val DB_EXECUTOR by lazy { TaskExecutors.sharedBlockingIO() }
 context(_: Raise<InterruptedException>)
 internal fun <T> runBlockingIO(block: () -> T): T {
     val fiber = Task.fromBlockingIO { block() }.ensureRunningOnExecutor(DB_EXECUTOR).runFiber()
-
     try {
         return fiber.awaitBlocking()
     } catch (e: ExecutionException) {
