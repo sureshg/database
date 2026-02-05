@@ -1,18 +1,18 @@
 plugins {
     id("delayedqueue.base")
     id("delayedqueue.publish")
+    id("delayedqueue.versions")
 }
 
 dependencies {
-    implementation("org.funfix:tasks-jvm:0.3.1")
-    implementation("com.zaxxer:HikariCP:6.3.2")
+    implementation(libs.funfix.tasks.jvm)
+    implementation(libs.hikaricp)
 
-    testImplementation("ch.qos.logback:logback-classic:1.5.18")
-    testImplementation("org.xerial:sqlite-jdbc:3.50.3.0")
-
-    testImplementation(platform("org.junit:junit-bom:5.11.4"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation(libs.logback.classic)
+    testImplementation(libs.jdbc.sqlite)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 tasks.test {

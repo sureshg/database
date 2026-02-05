@@ -1,7 +1,8 @@
-package org.funfix.delayedqueue.jvm;
+package org.funfix.delayedqueue.api;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.funfix.delayedqueue.jvm.JdbcDriver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 
@@ -9,7 +10,7 @@ import org.junit.jupiter.api.DisplayName;
  * Tests for JdbcDriver sealed interface.
  */
 @DisplayName("JdbcDriver Tests")
-class JdbcDriverTest {
+class GJdbcDriverTest {
 
     @Test
     @DisplayName("MsSqlServer driver should have correct class name")
@@ -97,7 +98,9 @@ class JdbcDriverTest {
     @Test
     @DisplayName("All driver instances should be equal to themselves")
     void testDriverEquality() {
+        //noinspection EqualsWithItself
         assertSame(JdbcDriver.MsSqlServer, JdbcDriver.MsSqlServer);
+        //noinspection EqualsWithItself
         assertSame(JdbcDriver.Sqlite, JdbcDriver.Sqlite);
     }
 
@@ -117,5 +120,25 @@ class JdbcDriverTest {
         String sqliteString = JdbcDriver.Sqlite.toString();
         assertTrue(sqliteString.contains("Sqlite"),
             "Sqlite toString should contain 'Sqlite': " + sqliteString);
+    }
+
+    @Test
+    @DisplayName("Switch expression on JdbcDriver without default branch")
+    void testSwitchExpressionCoverage() {
+        JdbcDriver driver = JdbcDriver.Sqlite;
+        String result = switch (driver) {
+            //noinspection DataFlowIssue
+            case Sqlite -> "sqlite";
+            case MsSqlServer -> "mssql";
+        };
+        assertEquals("sqlite", result);
+
+        driver = JdbcDriver.MsSqlServer;
+        result = switch (driver) {
+            case Sqlite -> "sqlite";
+            //noinspection DataFlowIssue
+            case MsSqlServer -> "mssql";
+        };
+        assertEquals("mssql", result);
     }
 }

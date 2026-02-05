@@ -1,8 +1,10 @@
-package org.funfix.delayedqueue.jvm;
+package org.funfix.delayedqueue.api;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Duration;
+
+import org.funfix.delayedqueue.jvm.JdbcDatabasePoolConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 

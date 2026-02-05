@@ -27,6 +27,7 @@ kotlin {
             "-Xjvm-default=all",
             "-Xjsr305=strict",
             "-Xemit-jvm-type-annotations",
+            "-Xcontext-parameters",
         )
     }
 }
@@ -65,5 +66,5 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
 }
 
 dependencies {
-    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.7")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting")
 }

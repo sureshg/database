@@ -1,39 +1,59 @@
-import com.vanniktech.maven.publish.SonatypeHost
-
 plugins {
     id("com.vanniktech.maven.publish")
 }
 
+repositories {
+    mavenCentral()
+}
+
+group = "org.funfix"
+
+val projectVersion = property("project.version").toString()
+version = projectVersion.let { version ->
+    if (!project.hasProperty("buildRelease"))
+        "$version-SNAPSHOT"
+    else
+        version
+}
+
 mavenPublishing {
-    publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
-    
+    publishToMavenCentral()
     signAllPublications()
-    
+
     pom {
-        name.set(project.name)
-        description.set("Delayed queue implementation for JVM")
-        url.set("https://github.com/funfix/delayedqueue")
-        
+        inceptionYear.set("2024")
+        url = "https://github.com/funfix/delayedqueue"
         licenses {
             license {
-                name.set("The Apache License, Version 2.0")
-                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                distribution.set("repo")
+                name = "The Apache License, Version 2.0"
+                url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
             }
         }
-        
+
         developers {
             developer {
-                id.set("funfix")
-                name.set("Funfix Contributors")
-                email.set("contact@funfix.org")
+                id = "alexandru"
+                name = "Alexandru Nedelcu"
+                email = "noreply@alexn.org"
             }
         }
-        
+
         scm {
-            url.set("https://github.com/funfix/delayedqueue")
-            connection.set("scm:git:git://github.com/funfix/delayedqueue.git")
-            developerConnection.set("scm:git:ssh://git@github.com/funfix/delayedqueue.git")
+            connection = "scm:git:git://github.com/funfix/delayedqueue.git"
+            developerConnection = "scm:git:ssh://github.com/funfix/delayedqueue.git"
+            url = "https://github.com/funfix/delayedqueue"
         }
+
+        issueManagement {
+            system = "GitHub"
+            url = "https://github.com/funfix/delayedqueue/issues"
+        }
+    }
+}
+
+tasks.register("printInfo") {
+    doLast {
+        println("Group: $group")
+        println("Project version: $version")
     }
 }

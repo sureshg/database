@@ -4,7 +4,32 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="3597ea95-2dee-4a8d-a2f5-b44210addc8b" name="Changes" comment="" />
+    <list default="true" id="3597ea95-2dee-4a8d-a2f5-b44210addc8b" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/buildSrc/src/main/kotlin/delayedqueue.versions.gradle.kts" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jvm/src/main/kotlin/org/funfix/delayedqueue/jvm/internals/database.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jvm/src/main/kotlin/org/funfix/delayedqueue/jvm/internals/execution.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jvm/src/main/kotlin/org/funfix/delayedqueue/jvm/internals/raise.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jvm/src/test/kotlin/org/funfix/delayedqueue/jvm/internals/DatabaseTests.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jvm/src/test/kotlin/org/funfix/delayedqueue/jvm/internals/ExecutionTests.kt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/jvm/src/test/kotlin/org/funfix/delayedqueue/jvm/internals/RaiseTests.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/kotlinc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/kotlinc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/buildSrc/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/buildSrc/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/buildSrc/settings.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/buildSrc/settings.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/buildSrc/src/main/kotlin/delayedqueue.base.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/buildSrc/src/main/kotlin/delayedqueue.base.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/buildSrc/src/main/kotlin/delayedqueue.publish.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/buildSrc/src/main/kotlin/delayedqueue.publish.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle.properties" beforeDir="false" afterPath="$PROJECT_DIR$/gradle.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jvm/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/jvm/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jvm/src/main/kotlin/org/funfix/delayedqueue/jvm/DatabaseUtils.kt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/jvm/src/test/java/org/funfix/delayedqueue/jvm/JdbcConnectionConfigTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/jvm/src/test/java/org/funfix/delayedqueue/api/JdbcConnectionConfigTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jvm/src/test/java/org/funfix/delayedqueue/jvm/JdbcDatabasePoolConfigTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/jvm/src/test/java/org/funfix/delayedqueue/api/JdbcDatabasePoolConfigTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/jvm/src/test/java/org/funfix/delayedqueue/jvm/JdbcDriverTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/jvm/src/test/java/org/funfix/delayedqueue/api/JdbcDriverTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/settings.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/settings.gradle.kts" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -19,6 +44,33 @@
     <projectState path="$PROJECT_DIR$">
       <ProjectState />
     </projectState>
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <task path="$PROJECT_DIR$">
+          <activation />
+        </task>
+        <projects_view>
+          <tree_state>
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="delayedqueue" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Kotlin File" />
+      </list>
+    </option>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -39,8 +91,12 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "Gradle.Download Sources.executor": "Run",
+    "Gradle.GJdbcDriverTest.testSwitchExpressionCoverage.executor": "Run",
+    "Gradle.RaiseTests.executor": "Run",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
@@ -50,6 +106,73 @@
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="K2MoveDeclarationsDialog.RECENT_PACKAGE_KEY">
+      <recent name="org.funfix.delayedqueue.jvm.internals" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Gradle.RaiseTests">
+    <configuration name="GJdbcDriverTest.testSwitchExpressionCoverage" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":jvm:test" />
+            <option value="--tests" />
+            <option value="&quot;org.funfix.delayedqueue.jvm.GJdbcDriverTest.testSwitchExpressionCoverage&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <ExternalSystemDebugDisabled>false</ExternalSystemDebugDisabled>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <GradleProfilingDisabled>false</GradleProfilingDisabled>
+      <GradleCoverageDisabled>false</GradleCoverageDisabled>
+      <method v="2" />
+    </configuration>
+    <configuration name="RaiseTests" type="GradleRunConfiguration" factoryName="Gradle" temporary="true">
+      <ExternalSystemSettings>
+        <option name="executionName" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="externalSystemIdString" value="GRADLE" />
+        <option name="scriptParameters" value="" />
+        <option name="taskDescriptions">
+          <list />
+        </option>
+        <option name="taskNames">
+          <list>
+            <option value=":jvm:test" />
+            <option value="--tests" />
+            <option value="&quot;org.funfix.delayedqueue.jvm.internals.RaiseTests&quot;" />
+          </list>
+        </option>
+        <option name="vmOptions" />
+      </ExternalSystemSettings>
+      <ExternalSystemDebugServerProcess>false</ExternalSystemDebugServerProcess>
+      <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
+      <ExternalSystemDebugDisabled>false</ExternalSystemDebugDisabled>
+      <DebugAllEnabled>false</DebugAllEnabled>
+      <RunAsTest>true</RunAsTest>
+      <GradleProfilingDisabled>false</GradleProfilingDisabled>
+      <GradleCoverageDisabled>false</GradleCoverageDisabled>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Gradle.RaiseTests" />
+        <item itemvalue="Gradle.GJdbcDriverTest.testSwitchExpressionCoverage" />
+      </list>
+    </recent_temporary>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>

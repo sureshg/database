@@ -1,0 +1,27 @@
+[versions]
+binary-compatibility-validator = "0.18.1"
+dokka = "2.1.0"
+kotlin = "2.3.10"
+kover = "0.9.5"
+publish-plugin = "0.36.0"
+versions-plugin = "0.53.0"
+detekt = "1.23.8"
+
+[libraries]
+# Plugins specified in buildSrc/build.gradle.kts
+detekt-gradle-plugin = { module = "io.gitlab.arturbosch.detekt:detekt-gradle-plugin", version.ref = "detekt" }
+binary-compatibility-validator-plugin = { module = "org.jetbrains.kotlinx.binary-compatibility-validator:org.jetbrains.kotlinx.binary-compatibility-validator.gradle.plugin", version.ref = "binary-compatibility-validator" }
+dokka-gradle-plugin = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
+gradle-versions-plugin = { module = "com.github.ben-manes:gradle-versions-plugin", version.ref = "versions-plugin" }
+kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kover-gradle-plugin = { module = "org.jetbrains.kotlinx:kover-gradle-plugin", version.ref = "kover" }
+vanniktech-publish-plugin = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "publish-plugin" }
+
+# Libraries
+funfix-tasks-jvm = { module = "org.funfix:tasks-jvm", version = "0.4.0" }
+hikaricp = { module = "com.zaxxer:HikariCP", version = "7.0.2" }
+logback-classic = { module = "ch.qos.logback:logback-classic", version = "1.5.27" }
+jdbc-sqlite = { module = "org.xerial:sqlite-jdbc", version = "3.51.1.0" }
+junit-bom = { module = "org.junit:junit-bom", version = "6.0.2" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
