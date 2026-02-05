@@ -21,7 +21,7 @@ import java.util.Collections
  * @property scheduleInterval how often to check and update the schedule
  */
 @JvmRecord
-public data class DailyCronSchedule(
+public data class CronDailySchedule(
     val zoneId: ZoneId,
     val hoursOfDay: List<LocalTime>,
     val scheduleInAdvance: Duration,
@@ -93,7 +93,7 @@ public data class DailyCronSchedule(
             hoursOfDay: List<LocalTime>,
             scheduleInAdvance: Duration,
             scheduleInterval: Duration,
-        ): DailyCronSchedule =
-            DailyCronSchedule(zoneId, hoursOfDay, scheduleInAdvance, scheduleInterval)
+        ): CronDailySchedule =
+            CronDailySchedule(zoneId, hoursOfDay, scheduleInAdvance, scheduleInterval)
     }
 }

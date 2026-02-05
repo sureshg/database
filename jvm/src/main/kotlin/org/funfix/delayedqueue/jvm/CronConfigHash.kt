@@ -13,29 +13,29 @@ import java.time.Duration
  * @property value the MD5 hash string
  */
 @JvmRecord
-public data class ConfigHash(public val value: String) {
+public data class CronConfigHash(public val value: String) {
     override fun toString(): String = value
 
     public companion object {
         /** Creates a ConfigHash from a daily cron schedule configuration. */
         @JvmStatic
-        public fun fromDailyCron(config: DailyCronSchedule): ConfigHash {
+        public fun fromDailyCron(config: CronDailySchedule): CronConfigHash {
             val text = buildString {
                 appendLine("daily-cron:")
                 appendLine("  zone: ${config.zoneId}")
                 append("  hours: ${config.hoursOfDay.joinToString(", ")}")
             }
-            return ConfigHash(md5(text))
+            return CronConfigHash(md5(text))
         }
 
         /** Creates a ConfigHash from a periodic tick configuration. */
         @JvmStatic
-        public fun fromPeriodicTick(period: Duration): ConfigHash {
+        public fun fromPeriodicTick(period: Duration): CronConfigHash {
             val text = buildString {
                 appendLine("periodic-tick:")
                 append("  period-ms: ${period.toMillis()}")
             }
-            return ConfigHash(md5(text))
+            return CronConfigHash(md5(text))
         }
 
         private fun md5(input: String): String {

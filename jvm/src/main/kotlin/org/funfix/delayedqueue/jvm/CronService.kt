@@ -2,6 +2,7 @@ package org.funfix.delayedqueue.jvm
 
 import java.sql.SQLException
 import java.time.Duration
+import java.time.Instant
 
 /**
  * Service for installing cron-like periodic schedules in a delayed queue.
@@ -30,7 +31,7 @@ public interface CronService<A> {
      */
     @Throws(SQLException::class, InterruptedException::class)
     public fun installTick(
-        configHash: ConfigHash,
+        configHash: CronConfigHash,
         keyPrefix: String,
         messages: List<CronMessage<A>>,
     )
@@ -46,7 +47,7 @@ public interface CronService<A> {
      * @throws InterruptedException if the operation is interrupted
      */
     @Throws(SQLException::class, InterruptedException::class)
-    public fun uninstallTick(configHash: ConfigHash, keyPrefix: String)
+    public fun uninstallTick(configHash: CronConfigHash, keyPrefix: String)
 
     /**
      * Installs a cron-like schedule where messages are generated at intervals.
@@ -67,7 +68,7 @@ public interface CronService<A> {
      */
     @Throws(SQLException::class, InterruptedException::class)
     public fun install(
-        configHash: ConfigHash,
+        configHash: CronConfigHash,
         keyPrefix: String,
         scheduleInterval: Duration,
         generateMany: CronMessageBatchGenerator<A>,
@@ -89,7 +90,7 @@ public interface CronService<A> {
     @Throws(SQLException::class, InterruptedException::class)
     public fun installDailySchedule(
         keyPrefix: String,
-        schedule: DailyCronSchedule,
+        schedule: CronDailySchedule,
         generator: CronMessageGenerator<A>,
     ): AutoCloseable
 
@@ -110,6 +111,24 @@ public interface CronService<A> {
     public fun installPeriodicTick(
         keyPrefix: String,
         period: Duration,
-        generator: PayloadGenerator<A>,
+        generator: CronPayloadGenerator<A>,
     ): AutoCloseable
+}
+
+/** Generates a batch of cron messages based on the current instant. */
+public fun interface CronMessageBatchGenerator<A> {
+    /** Creates a batch of cron messages. */
+    public operator fun invoke(now: Instant): List<CronMessage<A>>
+}
+
+/** Generates a single cron message for a given instant. */
+public fun interface CronMessageGenerator<A> {
+    /** Creates a cron message for the given instant. */
+    public operator fun invoke(at: Instant): CronMessage<A>
+}
+
+/** Generates a payload for a given instant. */
+public fun interface CronPayloadGenerator<A> {
+    /** Creates a payload for the given instant. */
+    public operator fun invoke(at: Instant): A
 }

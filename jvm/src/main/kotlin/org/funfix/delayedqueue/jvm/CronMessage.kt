@@ -29,7 +29,7 @@ constructor(val payload: A, val scheduleAt: Instant, val scheduleAtActual: Insta
      * @param canUpdate whether the resulting message can update existing entries
      */
     public fun toScheduled(
-        configHash: ConfigHash,
+        configHash: CronConfigHash,
         keyPrefix: String,
         canUpdate: Boolean,
     ): ScheduledMessage<A> =
@@ -59,7 +59,7 @@ constructor(val payload: A, val scheduleAt: Instant, val scheduleAtActual: Insta
          * @return a unique key string
          */
         @JvmStatic
-        public fun key(configHash: ConfigHash, keyPrefix: String, scheduleAt: Instant): String =
+        public fun key(configHash: CronConfigHash, keyPrefix: String, scheduleAt: Instant): String =
             "$keyPrefix/${configHash.value}/${formatTimestamp(scheduleAt)}"
 
         /**
@@ -70,6 +70,8 @@ constructor(val payload: A, val scheduleAt: Instant, val scheduleAtActual: Insta
          */
         @JvmStatic
         public fun <A> staticPayload(payload: A): CronMessageGenerator<A> =
-            CronMessageGenerator { scheduleAt -> CronMessage(payload, scheduleAt) }
+            CronMessageGenerator { scheduleAt ->
+                CronMessage(payload, scheduleAt)
+            }
     }
 }

@@ -26,7 +26,7 @@ public class CronServiceTest {
             clock
         );
         
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         var messages = List.of(
             new CronMessage<>("msg1", clock.now().plusSeconds(10)),
             new CronMessage<>("msg2", clock.now().plusSeconds(20))
@@ -57,7 +57,7 @@ public class CronServiceTest {
             clock
         );
         
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         var messages = List.of(
             new CronMessage<>("msg1", clock.now().plusSeconds(10))
         );
@@ -81,7 +81,7 @@ public class CronServiceTest {
             clock
         );
         
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         
         // Install first set of messages
         queue.getCron().installTick(configHash, "prefix-", List.of(
@@ -110,8 +110,8 @@ public class CronServiceTest {
             clock
         );
 
-        var configHashA = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
-        var configHashB = ConfigHash.fromPeriodicTick(Duration.ofHours(2));
+        var configHashA = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHashB = CronConfigHash.fromPeriodicTick(Duration.ofHours(2));
 
         queue.getCron().installTick(configHashA, "prefix-", List.of(
             new CronMessage<>("msg-a", clock.now().plusSeconds(5))
@@ -145,7 +145,7 @@ public class CronServiceTest {
             clock
         );
         
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         
         try (var handle = queue.getCron().install(
             configHash,
@@ -165,7 +165,7 @@ public class CronServiceTest {
             "test-source",
             clock
         );
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
 
         assertThrows(IllegalArgumentException.class, () -> queue.getCron().install(
             configHash,
@@ -218,7 +218,7 @@ public class CronServiceTest {
             clock
         );
         
-        var schedule = DailyCronSchedule.create(
+        var schedule = CronDailySchedule.create(
             ZoneId.of("UTC"),
             List.of(LocalTime.parse("12:00:00")),
             Duration.ZERO,
@@ -236,82 +236,23 @@ public class CronServiceTest {
     
     @Test
     public void configHash_differentConfigsHaveDifferentHashes() {
-        var hash1 = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
-        var hash2 = ConfigHash.fromPeriodicTick(Duration.ofHours(2));
+        var hash1 = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var hash2 = CronConfigHash.fromPeriodicTick(Duration.ofHours(2));
         
         assertNotEquals(hash1.value(), hash2.value());
     }
     
     @Test
     public void configHash_sameConfigsHaveSameHashes() {
-        var hash1 = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
-        var hash2 = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var hash1 = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var hash2 = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         
         assertEquals(hash1.value(), hash2.value());
     }
     
     @Test
-    public void dailyCronSchedule_getNextTimes_calculatesCorrectly() {
-        var schedule = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("12:00:00"), LocalTime.parse("18:00:00")),
-            Duration.ofHours(3),
-            Duration.ofSeconds(1)
-        );
-        
-        var now = Instant.parse("2024-01-01T10:00:00Z");
-        var nextTimes = schedule.getNextTimes(now);
-        
-        assertFalse(nextTimes.isEmpty());
-        assertEquals(Instant.parse("2024-01-01T12:00:00Z"), nextTimes.getFirst());
-    }
-
-    @Test
-    public void dailyCronSchedule_scheduleInAdvanceRespected() {
-        var schedule = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("12:00:00")),
-            Duration.ofMinutes(30),
-            Duration.ofSeconds(1)
-        );
-
-        var now = Instant.parse("2024-01-01T10:00:00Z");
-        var nextTimes = schedule.getNextTimes(now);
-
-        assertTrue(nextTimes.isEmpty());
-    }
-
-    @Test
-    public void dailyCronSchedule_rejectsNonPositiveScheduleInterval() {
-        assertThrows(IllegalArgumentException.class, () -> DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("12:00:00")),
-            Duration.ofHours(1),
-            Duration.ZERO
-        ));
-    }
-    
-    @Test
-    public void dailyCronSchedule_withScheduleInAdvance_schedulesMultipleDays() {
-        var schedule = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("12:00:00")),
-            Duration.ofDays(2),
-            Duration.ofSeconds(1)
-        );
-        
-        var now = Instant.parse("2024-01-01T10:00:00Z");
-        var nextTimes = schedule.getNextTimes(now);
-        
-        // Should have messages for today and tomorrow within the 2-day window
-        assertTrue(nextTimes.size() >= 2);
-        assertTrue(nextTimes.contains(Instant.parse("2024-01-01T12:00:00Z")));
-        assertTrue(nextTimes.contains(Instant.parse("2024-01-02T12:00:00Z")));
-    }
-    
-    @Test
     public void cronMessage_keyGeneration_isConsistent() {
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         var timestamp = Instant.parse("2024-01-01T12:00:00Z");
         
         var key1 = CronMessage.key(configHash, "prefix-", timestamp);
@@ -323,7 +264,7 @@ public class CronServiceTest {
 
     @Test
     public void cronMessage_keyIncludesSubSecondPrecision() {
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         var timestampA = Instant.parse("2024-01-01T12:00:00.100Z");
         var timestampB = Instant.parse("2024-01-01T12:00:00.900Z");
 
@@ -335,7 +276,7 @@ public class CronServiceTest {
     
     @Test
     public void cronMessage_toScheduled_createsCorrectMessage() {
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         var cronMsg = new CronMessage<>("payload", Instant.parse("2024-01-01T12:00:00Z"));
         
         var scheduled = cronMsg.toScheduled(configHash, "prefix-", true);
@@ -356,7 +297,7 @@ public class CronServiceTest {
             "test-source",
             clock
         );
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         
         var messages = List.of(
             new CronMessage<>("msg1", clock.now().plusSeconds(10)),
@@ -384,7 +325,7 @@ public class CronServiceTest {
             "test-source",
             clock
         );
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         var timeA = Instant.parse("2024-01-01T00:00:00.100Z");
         var timeB = Instant.parse("2024-01-01T00:00:00.900Z");
 
@@ -409,7 +350,7 @@ public class CronServiceTest {
             "test-source",
             clock
         );
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         
         var messages = List.of(
             new CronMessage<>("msg1", clock.now().plusSeconds(10)),
@@ -447,7 +388,7 @@ public class CronServiceTest {
             "test-source",
             clock
         );
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         
         var messages = List.of(
             new CronMessage<>("msg1", clock.now().plusSeconds(10)),
@@ -478,7 +419,7 @@ public class CronServiceTest {
             "test-source",
             clock
         );
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         
         // Install messages with different prefixes
         queue.getCron().installTick(configHash, "prefix1-", List.of(
@@ -507,8 +448,8 @@ public class CronServiceTest {
             "test-source",
             clock
         );
-        var configHashA = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
-        var configHashB = ConfigHash.fromPeriodicTick(Duration.ofHours(2));
+        var configHashA = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHashB = CronConfigHash.fromPeriodicTick(Duration.ofHours(2));
 
         queue.getCron().installTick(configHashA, "prefix-", List.of(
             new CronMessage<>("msg-a", clock.now().plusSeconds(10))
@@ -534,7 +475,7 @@ public class CronServiceTest {
             "test-source",
             clock
         );
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         
         // Install messages
         queue.getCron().installTick(configHash, "cron-", List.of(
@@ -556,7 +497,7 @@ public class CronServiceTest {
         var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var timeConfig = DelayedQueueTimeConfig.create(Duration.ofSeconds(5), Duration.ofMillis(100));
         var queue = DelayedQueueInMemory.<String>create(timeConfig, "test-source", clock);
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
 
         queue.getCron().installTick(configHash, "cron-", List.of(
             new CronMessage<>("msg", clock.now())
@@ -579,7 +520,7 @@ public class CronServiceTest {
         var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var timeConfig = DelayedQueueTimeConfig.create(Duration.ofMillis(50), Duration.ofMillis(10));
         var queue = DelayedQueueInMemory.<String>create(timeConfig, "test-source", clock);
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
 
         try (var handle = queue.getCron().install(
             configHash,
@@ -609,122 +550,8 @@ public class CronServiceTest {
     }
     
     @Test
-    public void dailyCronSchedule_getNextTimes_skipsCurrentHour() {
-        var schedule = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("12:00:00"), LocalTime.parse("18:00:00")),
-            Duration.ofHours(7),
-            Duration.ofSeconds(1)
-        );
-        
-        var now = Instant.parse("2024-01-01T12:00:00Z"); // Exact 12:00
-        var nextTimes = schedule.getNextTimes(now);
-        
-        assertEquals(1, nextTimes.size());
-        // Should skip 12:00 (current time) and go to 18:00
-        assertEquals(Instant.parse("2024-01-01T18:00:00Z"), nextTimes.getFirst());
-    }
-    
-    @Test
-    public void dailyCronSchedule_getNextTimes_schedulesNextDay() {
-        var schedule = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("12:00:00"), LocalTime.parse("18:00:00")),
-            Duration.ofDays(1),
-            Duration.ofSeconds(1)
-        );
-        
-        var now = Instant.parse("2024-01-01T20:00:00Z");
-        var nextTimes = schedule.getNextTimes(now);
-        
-        assertEquals(2, nextTimes.size());
-        assertEquals(Instant.parse("2024-01-02T12:00:00Z"), nextTimes.getFirst());
-        assertEquals(Instant.parse("2024-01-02T18:00:00Z"), nextTimes.getLast());
-    }
-    
-    @Test
-    public void dailyCronSchedule_withMultipleHoursPerDay() {
-        var schedule = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(
-                LocalTime.parse("09:00:00"),
-                LocalTime.parse("12:00:00"),
-                LocalTime.parse("18:00:00")
-            ),
-            Duration.ofDays(1),
-            Duration.ofSeconds(1)
-        );
-        
-        var now = Instant.parse("2024-01-01T10:00:00Z");
-        var nextTimes = schedule.getNextTimes(now);
-        
-        // Should schedule remaining today + next day times within the window
-        assertTrue(nextTimes.size() >= 3);
-        assertTrue(nextTimes.contains(Instant.parse("2024-01-01T12:00:00Z")));
-        assertTrue(nextTimes.contains(Instant.parse("2024-01-01T18:00:00Z")));
-        assertTrue(nextTimes.contains(Instant.parse("2024-01-02T09:00:00Z")));
-    }
-    
-    @Test
-    public void configHash_fromDailyCron_isDeterministic() {
-        var schedule = DailyCronSchedule.create(
-            ZoneId.of("Europe/Amsterdam"),
-            List.of(LocalTime.parse("12:00:00")),
-            Duration.ofDays(1),
-            Duration.ofSeconds(1)
-        );
-        
-        var hash1 = ConfigHash.fromDailyCron(schedule);
-        var hash2 = ConfigHash.fromDailyCron(schedule);
-        
-        assertEquals(hash1, hash2);
-    }
-    
-    @Test
-    public void configHash_fromDailyCron_changesWithDifferentTimezone() {
-        var schedule1 = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("12:00:00")),
-            Duration.ofDays(1),
-            Duration.ofSeconds(1)
-        );
-        var schedule2 = DailyCronSchedule.create(
-            ZoneId.of("America/New_York"),
-            List.of(LocalTime.parse("12:00:00")),
-            Duration.ofDays(1),
-            Duration.ofSeconds(1)
-        );
-        
-        var hash1 = ConfigHash.fromDailyCron(schedule1);
-        var hash2 = ConfigHash.fromDailyCron(schedule2);
-        
-        assertNotEquals(hash1, hash2);
-    }
-    
-    @Test
-    public void configHash_fromDailyCron_changesWithDifferentHours() {
-        var schedule1 = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("12:00:00")),
-            Duration.ofDays(1),
-            Duration.ofSeconds(1)
-        );
-        var schedule2 = DailyCronSchedule.create(
-            ZoneId.of("UTC"),
-            List.of(LocalTime.parse("18:00:00")),
-            Duration.ofDays(1),
-            Duration.ofSeconds(1)
-        );
-        
-        var hash1 = ConfigHash.fromDailyCron(schedule1);
-        var hash2 = ConfigHash.fromDailyCron(schedule2);
-        
-        assertNotEquals(hash1, hash2);
-    }
-    
-    @Test
     public void cronMessage_withScheduleAtActual_usesDifferentExecutionTime() {
-        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHash = CronConfigHash.fromPeriodicTick(Duration.ofHours(1));
         var nominal = Instant.parse("2024-01-01T12:00:00Z");
         var actual = Instant.parse("2024-01-01T12:05:00Z");
         var cronMsg = new CronMessage<>("payload", nominal, actual);

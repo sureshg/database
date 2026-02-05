@@ -82,8 +82,8 @@ dependencies {
 }
 
 ktfmt {
-    kotlinLangStyle() // Use the default Kotlin style
-    // Optionally, configure more options here
+    kotlinLangStyle()
+    removeUnusedImports = true
 }
 
 kover {

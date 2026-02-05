@@ -28,6 +28,8 @@ import java.time.Instant
  * @property timestamp when this envelope was created (poll time)
  * @property source identifier for the queue or source system
  * @property deliveryType indicates whether this is the first delivery or a redelivery
+ * @property acknowledge function to call to acknowledge successful processing, and delete the
+ *   message from the queue
  */
 public data class AckEnvelope<out A>(
     val payload: A,
@@ -35,7 +37,7 @@ public data class AckEnvelope<out A>(
     val timestamp: Instant,
     val source: String,
     val deliveryType: DeliveryType,
-    @field:Transient private val acknowledgeHandler: AckHandler = AckHandler {},
+    private val acknowledge: AcknowledgeFun,
 ) {
     /**
      * Acknowledges successful processing of this message.
@@ -47,49 +49,14 @@ public data class AckEnvelope<out A>(
      * be ignored to preserve the updated message.
      */
     public fun acknowledge() {
-        acknowledgeHandler.acknowledge()
+        acknowledge.invoke()
     }
+}
 
-    /** Companion object for creating AckEnvelopes. */
-    public companion object {
-        /** Creates an AckEnvelope with the specified properties. */
-        @JvmStatic
-        @JvmOverloads
-        public fun <A> create(
-            payload: A,
-            messageId: MessageId,
-            timestamp: Instant,
-            source: String = "delayed-queue",
-            deliveryType: DeliveryType = DeliveryType.FIRST_DELIVERY,
-            acknowledgeHandler: AckHandler = AckHandler {},
-        ): AckEnvelope<A> =
-            AckEnvelope(payload, messageId, timestamp, source, deliveryType, acknowledgeHandler)
-    }
-
-    // Custom equals/hashCode to exclude acknowledgeHandler
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is AckEnvelope<*>) return false
-        if (payload != other.payload) return false
-        if (messageId != other.messageId) return false
-        if (timestamp != other.timestamp) return false
-        if (source != other.source) return false
-        if (deliveryType != other.deliveryType) return false
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = payload?.hashCode() ?: 0
-        result = 31 * result + messageId.hashCode()
-        result = 31 * result + timestamp.hashCode()
-        result = 31 * result + source.hashCode()
-        result = 31 * result + deliveryType.hashCode()
-        return result
-    }
-
-    override fun toString(): String {
-        return "AckEnvelope(payload=$payload, messageId=$messageId, timestamp=$timestamp, source='$source', deliveryType=$deliveryType)"
-    }
+/** Handles acknowledgment for a polled message. */
+public fun interface AcknowledgeFun {
+    /** Acknowledge successful processing. */
+    public operator fun invoke()
 }
 
 /**
@@ -97,8 +64,8 @@ public data class AckEnvelope<out A>(
  *
  * @property value the string representation of the message ID
  */
-@JvmInline
-public value class MessageId(public val value: String) {
+@JvmRecord
+public data class MessageId(public val value: String) {
     override fun toString(): String = value
 }
 

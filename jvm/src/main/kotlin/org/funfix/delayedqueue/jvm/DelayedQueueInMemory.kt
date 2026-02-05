@@ -105,9 +105,7 @@ private constructor(
         }
     }
 
-    override fun <In> offerBatch(
-        messages: List<BatchedMessage<In, A>>
-    ): List<BatchedReply<In, A>> {
+    override fun <In> offerBatch(messages: List<BatchedMessage<In, A>>): List<BatchedReply<In, A>> {
         val replies = ArrayList<BatchedReply<In, A>>(messages.size)
         for (batched in messages) {
             val outcome =
@@ -161,7 +159,7 @@ private constructor(
                     timestamp = now,
                     source = first.ackEnvSource,
                     deliveryType = first.deliveryType,
-                    acknowledgeHandler = { acknowledgeMessage(first) },
+                    acknowledge = { acknowledgeMessage(first) },
                 )
             } else {
                 null
@@ -171,7 +169,7 @@ private constructor(
 
     override fun tryPollMany(batchMaxSize: Int): AckEnvelope<List<A>> {
         val messages = ArrayList<A>()
-        val acks = ArrayList<AckHandler>()
+        val acks = ArrayList<AcknowledgeFun>()
         var source = ackEnvSource
         var deliveryType = DeliveryType.FIRST_DELIVERY
 
@@ -179,7 +177,7 @@ private constructor(
         for (i in 0 until batchMaxSize) {
             val envelope = tryPoll() ?: break
             messages.add(envelope.payload)
-            acks.add(AckHandler { envelope.acknowledge() })
+            acks.add(AcknowledgeFun { envelope.acknowledge() })
             source = envelope.source
             if (envelope.deliveryType == DeliveryType.REDELIVERY) {
                 deliveryType = DeliveryType.REDELIVERY
@@ -195,7 +193,7 @@ private constructor(
             timestamp = now,
             source = source,
             deliveryType = deliveryType,
-            acknowledgeHandler = { acks.forEach { it.acknowledge() } },
+            acknowledge = { acks.forEach { it.invoke() } },
         )
     }
 
@@ -208,10 +206,7 @@ private constructor(
                     return envelope
                 }
                 // Wait for a message or timeout
-                condition.await(
-                    timeConfig.pollPeriod.toNanos(),
-                    TimeUnit.NANOSECONDS,
-                )
+                condition.await(timeConfig.pollPeriod.toNanos(), TimeUnit.NANOSECONDS)
             }
         }
     }
@@ -245,7 +240,7 @@ private constructor(
                 timestamp = now,
                 source = first.ackEnvSource,
                 deliveryType = first.deliveryType,
-                acknowledgeHandler = { acknowledgeMessage(first) },
+                acknowledge = { acknowledgeMessage(first) },
             )
         }
         return null
@@ -262,7 +257,7 @@ private constructor(
                     timestamp = now,
                     source = msg.ackEnvSource,
                     deliveryType = msg.deliveryType,
-                    acknowledgeHandler = { acknowledgeMessage(msg) },
+                    acknowledge = { acknowledgeMessage(msg) },
                 )
             } else {
                 null
@@ -313,12 +308,13 @@ private constructor(
         }
     }
 
-    private fun deleteOldCron(configHash: ConfigHash, keyPrefix: String) {
+    private fun deleteOldCron(configHash: CronConfigHash, keyPrefix: String) {
         val keyPrefixWithHash = "$keyPrefix/${configHash.value}/"
         lock.withLock {
             val toRemove =
                 map.entries.filter { (key, msg) ->
-                    key.startsWith(keyPrefixWithHash) && msg.deliveryType == DeliveryType.FIRST_DELIVERY
+                    key.startsWith(keyPrefixWithHash) &&
+                        msg.deliveryType == DeliveryType.FIRST_DELIVERY
                 }
             for ((key, msg) in toRemove) {
                 map.remove(key)
@@ -332,7 +328,8 @@ private constructor(
         lock.withLock {
             val toRemove =
                 map.entries.filter { (key, msg) ->
-                    key.startsWith(keyPrefixWithSlash) && msg.deliveryType == DeliveryType.FIRST_DELIVERY
+                    key.startsWith(keyPrefixWithSlash) &&
+                        msg.deliveryType == DeliveryType.FIRST_DELIVERY
                 }
             for ((key, msg) in toRemove) {
                 map.remove(key)
@@ -344,7 +341,7 @@ private constructor(
     private val cronService =
         object : CronService<A> {
             override fun installTick(
-                configHash: ConfigHash,
+                configHash: CronConfigHash,
                 keyPrefix: String,
                 messages: List<CronMessage<A>>,
             ) {
@@ -359,12 +356,12 @@ private constructor(
                 }
             }
 
-            override fun uninstallTick(configHash: ConfigHash, keyPrefix: String) {
+            override fun uninstallTick(configHash: CronConfigHash, keyPrefix: String) {
                 deleteOldCron(configHash, keyPrefix)
             }
 
             override fun install(
-                configHash: ConfigHash,
+                configHash: CronConfigHash,
                 keyPrefix: String,
                 scheduleInterval: Duration,
                 generateMany: CronMessageBatchGenerator<A>,
@@ -382,18 +379,18 @@ private constructor(
 
             override fun installDailySchedule(
                 keyPrefix: String,
-                schedule: DailyCronSchedule,
+                schedule: CronDailySchedule,
                 generator: CronMessageGenerator<A>,
             ): AutoCloseable {
                 return installLoop(
-                    configHash = ConfigHash.fromDailyCron(schedule),
+                    configHash = CronConfigHash.fromDailyCron(schedule),
                     keyPrefix = keyPrefix,
                     scheduleInterval = schedule.scheduleInterval,
                     generateMany = { now ->
                         val times = schedule.getNextTimes(now)
                         val batch = ArrayList<CronMessage<A>>(times.size)
                         for (time in times) {
-                            batch.add(generator.generate(time))
+                            batch.add(generator(time))
                         }
                         Collections.unmodifiableList(batch)
                     },
@@ -403,24 +400,23 @@ private constructor(
             override fun installPeriodicTick(
                 keyPrefix: String,
                 period: Duration,
-                generator: PayloadGenerator<A>,
+                generator: CronPayloadGenerator<A>,
             ): AutoCloseable {
                 require(!period.isZero && !period.isNegative) { "period must be positive" }
                 val scheduleInterval = Duration.ofSeconds(1).coerceAtLeast(period.dividedBy(4))
                 return installLoop(
-                    configHash = ConfigHash.fromPeriodicTick(period),
+                    configHash = CronConfigHash.fromPeriodicTick(period),
                     keyPrefix = keyPrefix,
                     scheduleInterval = scheduleInterval,
                     generateMany = { now ->
                         val periodMillis = period.toMillis()
                         val timestamp =
                             Instant.ofEpochMilli(
-                                ((now.toEpochMilli() + periodMillis) / periodMillis) *
-                                        periodMillis
+                                ((now.toEpochMilli() + periodMillis) / periodMillis) * periodMillis
                             )
                         listOf(
                             CronMessage(
-                                payload = generator.generate(timestamp),
+                                payload = generator.invoke(timestamp),
                                 scheduleAt = timestamp,
                             )
                         )
@@ -429,7 +425,7 @@ private constructor(
             }
 
             private fun installLoop(
-                configHash: ConfigHash,
+                configHash: CronConfigHash,
                 keyPrefix: String,
                 scheduleInterval: Duration,
                 generateMany: CronMessageBatchGenerator<A>,
@@ -440,7 +436,7 @@ private constructor(
                         while (!Thread.interrupted()) {
                             try {
                                 val now = clock.instant()
-                                val messages = generateMany.generate(now)
+                                val messages = generateMany(now)
                                 val canUpdate = isFirst
                                 isFirst = false
 
