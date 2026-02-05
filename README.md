@@ -1,166 +1,135 @@
-# delayedqueue
+# Delayed Queue
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.funfix/delayedqueue-jvm.svg)](https://search.maven.org/artifact/org.funfix/delayedqueue-jvm)
+[![javadoc](https://javadoc.io/badge2/org.funfix/delayedqueue-jvm/javadoc.svg)](https://javadoc.io/doc/org.funfix/delayedqueue-jvm)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-A Kotlin library for delayed queue implementations on the JVM, designed with maximum Java API compatibility and stability.
+A delayed, FIFO queue for the JVM with Java-first APIs and explicit acknowledgement semantics.
 
-## Code Formatting (ktfmt)
+- Schedule messages for future delivery with `Instant` timestamps
+- Poll with an acknowledgement callback; unacked messages get redelivered after a timeout
+- Batch offers for bulk scheduling
+- Cron-like scheduling helpers for periodic or daily ticks
 
-This project enforces consistent Kotlin code style using [ktfmt](https://github.com/facebook/ktfmt) via the [com.ncorti.ktfmt.gradle](https://github.com/cortinico/ktfmt-gradle) Gradle plugin. Formatting is automatically checked in CI and can be run locally:
+## Install
 
-- **Check formatting:**
-  ```sh
-  ./gradlew ktfmtCheck
-  ```
-- **Apply formatting:**
-  ```sh
-  ./gradlew ktfmtFormat
-  ```
+Pick the latest version from Maven Central.
 
-You can also run these tasks for a specific subproject, e.g.:
-  ```sh
-  ./gradlew :jvm:ktfmtCheck
-  ./gradlew :jvm:ktfmtFormat
-  ```
-
-The formatting rules are configured in the shared convention plugin (`buildSrc/src/main/kotlin/delayedqueue.base.gradle.kts`).
-
-## Features
-
-- **Java 21+ Target**: Built for modern JVM applications with virtual threads support
-- **Java-Friendly API**: All public APIs use `@JvmRecord` for seamless Java interop
-- **Explicit API Mode**: Every public API has explicit visibility modifiers
-- **Strict Quality Standards**: 
-  - Kotlin progressive mode enabled
-  - All warnings treated as errors
-  - Detekt with library ruleset
-  - Comprehensive documentation requirements
-- **Maven Central Ready**: Pre-configured for publishing to Maven Central
-
-## Project Structure
-
-```
-delayedqueue/
-├── buildSrc/                    # Convention plugins for shared build logic
-│   └── src/main/kotlin/
-│       ├── delayedqueue.base.gradle.kts      # Base Kotlin + Dokka
-│       └── delayedqueue.publish.gradle.kts   # Maven Central publishing
-├── jvm/                         # JVM subproject (delayedqueue-jvm)
-│   └── src/main/kotlin/
+Maven:
+```xml
+<dependency>
+  <groupId>org.funfix</groupId>
+  <artifactId>delayedqueue-jvm</artifactId>
+  <version>x.y.z</version>
+</dependency>
 ```
 
-## Build Configuration
-
-### Kotlin Compiler Options
-
-- **Target**: JVM 21
-- **Language & API**: Kotlin 2.1
-- **Progressive Mode**: Enabled
-- **All Warnings as Errors**: Enabled
-- **Explicit API Mode**: Enabled
-- **JVM Options**:
-  - `-Xjvm-default=all` - Generate default methods for interfaces
-  - `-Xjsr305=strict` - Strict null-safety
-  - `-Xemit-jvm-type-annotations` - Emit type annotations to bytecode
-
-### Code Quality
-
-#### Dokka
-- **Format**: Javadoc (for Java compatibility)
-- **Generation**: Automated javadoc JAR creation
-
-## Building
-
-```bash
-# Build all subprojects
-./gradlew build
-
-# Build specific subproject
-./gradlew :jvm:build
-
-# Generate documentation
-./gradlew dokkaJavadoc
-
-# Publish to Maven Local
-./gradlew publishToMavenLocal
+Gradle:
+```kotlin
+dependencies {
+    implementation("org.funfix:delayedqueue-jvm:x.y.z")
+}
 ```
 
-## Publishing to Maven Central
-
-1. Configure your credentials in `~/.gradle/gradle.properties`:
-
-```properties
-MAVEN_CENTRAL_USERNAME=your-username
-MAVEN_CENTRAL_PASSWORD=your-password
-
-# Option 1: Using GPG key file
-signing.keyId=your-key-id
-signing.password=your-password
-signing.secretKeyRingFile=/path/to/secring.gpg
-
-# Option 2: Using in-memory signing (recommended for CI)
-ORG_GRADLE_PROJECT_signingInMemoryKey=your-ascii-armored-key
-ORG_GRADLE_PROJECT_signingInMemoryKeyPassword=your-password
+sbt:
+```scala
+libraryDependencies += "org.funfix" % "delayedqueue-jvm" % "x.y.z"
 ```
 
-2. Publish:
+## Quickstart (Java)
 
-```bash
-# Publish to Maven Central
-./gradlew publish
+```java
+import java.time.Instant;
+import org.funfix.delayedqueue.jvm.AckEnvelope;
+import org.funfix.delayedqueue.jvm.DelayedQueue;
+import org.funfix.delayedqueue.jvm.DelayedQueueInMemory;
 
-# Or publish all publications
-./gradlew publishAllPublicationsToMavenCentralRepository
+DelayedQueue<String> queue = DelayedQueueInMemory.create();
+
+queue.offerOrUpdate("order-123", "ready", Instant.now().plusSeconds(5));
+
+AckEnvelope<String> envelope = queue.poll();
+try {
+    System.out.println(envelope.payload());
+    envelope.acknowledge();
+} catch (Exception e) {
+    // skip acknowledge: message will be redelivered after acquireTimeout
+}
 ```
+
+## Batch offers (Java)
+
+```java
+import java.time.Instant;
+import java.util.List;
+import org.funfix.delayedqueue.jvm.BatchedMessage;
+import org.funfix.delayedqueue.jvm.BatchedReply;
+import org.funfix.delayedqueue.jvm.ScheduledMessage;
+
+List<BatchedMessage<String, String>> batch = List.of(
+    new BatchedMessage<>(
+        "input-1",
+        new ScheduledMessage<>("key-1", "payload-1", Instant.now().plusSeconds(1), true)
+    ),
+    new BatchedMessage<>(
+        "input-2",
+        new ScheduledMessage<>("key-2", "payload-2", Instant.now().plusSeconds(2), false)
+    )
+);
+
+List<BatchedReply<String, String>> replies = queue.offerBatch(batch);
+```
+
+## Cron-style scheduling (Java)
+
+```java
+import java.time.Duration;
+import org.funfix.delayedqueue.jvm.DelayedQueue;
+import org.funfix.delayedqueue.jvm.DelayedQueueInMemory;
+
+DelayedQueue<String> queue = DelayedQueueInMemory.create();
+
+try (AutoCloseable handle = queue.getCron().installPeriodicTick(
+    "heartbeat",
+    Duration.ofMinutes(5),
+    at -> "beat@" + at
+)) {
+    // keep the scheduler alive while your app runs
+}
+```
+
+## Configuration
+
+Use `DelayedQueueTimeConfig` to control polling cadence and redelivery behavior.
+
+```java
+import java.time.Duration;
+import org.funfix.delayedqueue.jvm.DelayedQueueInMemory;
+import org.funfix.delayedqueue.jvm.DelayedQueueTimeConfig;
+
+DelayedQueueTimeConfig timeConfig =
+    DelayedQueueTimeConfig.create(Duration.ofSeconds(20), Duration.ofMillis(50));
+
+DelayedQueueInMemory<String> queue =
+    DelayedQueueInMemory.create(timeConfig, "orders", java.time.Clock.systemUTC());
+```
+
+## Documentation
+
+- Javadoc: https://javadoc.io/doc/org.funfix/delayedqueue-jvm
+- Source: `jvm/src/main/kotlin/org/funfix/delayedqueue/jvm`
 
 ## Development
 
-### Adding a New Subproject
-
-1. Create the directory: `mkdir -p new-subproject/src/main/kotlin`
-2. Add to `settings.gradle.kts`: `include("new-subproject")`
-3. Create `new-subproject/build.gradle.kts`:
-
-```kotlin
-plugins {
-    id("delayedqueue.base")
-    id("delayedqueue.publish")
-}
-
-dependencies {
-    // your dependencies
-}
+```bash
+./gradlew build
+./gradlew ktfmtCheck
 ```
-
-### Code Style
-
-- Follow Kotlin official code style
-- All public APIs must be documented
-- Use `@JvmRecord` for data classes exposed to Java
-- Prefer explicit visibility modifiers (required by explicit API mode)
-- Keep dependencies minimal and well-justified
 
 ## Requirements
 
-- **JDK 21+** for building and running
-- **Gradle 8.13+** (via wrapper)
-- **Kotlin 2.1+**
+- JDK 21+
 
 ## License
 
-```
-Copyright 2026 Funfix Contributors
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-```
+Apache-2.0. See `LICENSE`.

@@ -67,6 +67,10 @@ tasks.named<Jar>("javadocJar") {
     from(tasks.named("dokkaGeneratePublicationJavadoc"))
 }
 
+tasks.named("check").configure {
+    dependsOn(tasks.matching { it.name == "checkLegacyAbi" })
+}
+
 ktfmt {
     kotlinLangStyle()
     removeUnusedImports = true

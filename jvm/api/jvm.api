@@ -1,4 +1,4 @@
-public final class org/funfix/delayedqueue/jvm/AckEnvelope {
+public final class org/funfix/delayedqueue/jvm/AckEnvelope : java/lang/Record {
 	public fun <init> (Ljava/lang/Object;Lorg/funfix/delayedqueue/jvm/MessageId;Ljava/time/Instant;Ljava/lang/String;Lorg/funfix/delayedqueue/jvm/DeliveryType;Lorg/funfix/delayedqueue/jvm/AcknowledgeFun;)V
 	public final fun acknowledge ()V
 	public final fun component1 ()Ljava/lang/Object;
@@ -8,13 +8,13 @@ public final class org/funfix/delayedqueue/jvm/AckEnvelope {
 	public final fun component5 ()Lorg/funfix/delayedqueue/jvm/DeliveryType;
 	public final fun copy (Ljava/lang/Object;Lorg/funfix/delayedqueue/jvm/MessageId;Ljava/time/Instant;Ljava/lang/String;Lorg/funfix/delayedqueue/jvm/DeliveryType;Lorg/funfix/delayedqueue/jvm/AcknowledgeFun;)Lorg/funfix/delayedqueue/jvm/AckEnvelope;
 	public static synthetic fun copy$default (Lorg/funfix/delayedqueue/jvm/AckEnvelope;Ljava/lang/Object;Lorg/funfix/delayedqueue/jvm/MessageId;Ljava/time/Instant;Ljava/lang/String;Lorg/funfix/delayedqueue/jvm/DeliveryType;Lorg/funfix/delayedqueue/jvm/AcknowledgeFun;ILjava/lang/Object;)Lorg/funfix/delayedqueue/jvm/AckEnvelope;
+	public final fun deliveryType ()Lorg/funfix/delayedqueue/jvm/DeliveryType;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getDeliveryType ()Lorg/funfix/delayedqueue/jvm/DeliveryType;
-	public final fun getMessageId ()Lorg/funfix/delayedqueue/jvm/MessageId;
-	public final fun getPayload ()Ljava/lang/Object;
-	public final fun getSource ()Ljava/lang/String;
-	public final fun getTimestamp ()Ljava/time/Instant;
 	public fun hashCode ()I
+	public final fun messageId ()Lorg/funfix/delayedqueue/jvm/MessageId;
+	public final fun payload ()Ljava/lang/Object;
+	public final fun source ()Ljava/lang/String;
+	public final fun timestamp ()Ljava/time/Instant;
 	public fun toString ()Ljava/lang/String;
 }
 
