@@ -1,3 +1,5 @@
+import org.gradle.api.publish.tasks.GenerateModuleMetadata
+
 plugins {
     id("com.vanniktech.maven.publish")
 }
@@ -56,4 +58,8 @@ tasks.register("printInfo") {
         println("Group: $group")
         println("Project version: $version")
     }
+}
+
+tasks.withType<GenerateModuleMetadata>().configureEach {
+    dependsOn(tasks.matching { it.name == "dokkaJavadocJar" })
 }
