@@ -3,29 +3,19 @@ package org.funfix.delayedqueue.jvm
 /**
  * JDBC driver configurations.
  */
-public sealed interface JdbcDriver {
-    /**
-     * The JDBC driver class name.
-     */
+public enum class JdbcDriver(
     public val className: String
-
+) {
     /**
      * Microsoft SQL Server driver.
      */
-    public data object MsSqlServer : JdbcDriver {
-        override val className: String = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
-    }
+    MsSqlServer("com.microsoft.sqlserver.jdbc.SQLServerDriver"),
 
     /**
      * SQLite driver.
      */
-    public data object Sqlite : JdbcDriver {
-        override val className: String = "org.sqlite.JDBC"
-    }
+    Sqlite("org.sqlite.JDBC");
 
-    /**
-     * Factory methods for creating [JdbcDriver] instances.
-     */
     public companion object {
         /**
          * Attempt to find a [JdbcDriver] by its class name.
@@ -33,10 +23,14 @@ public sealed interface JdbcDriver {
          * @param className the JDBC driver class name
          * @return the [JdbcDriver] if found, null otherwise
          */
-        public fun of(className: String): JdbcDriver? = when {
-            className.equals(MsSqlServer.className, ignoreCase = true) -> MsSqlServer
-            className.equals(Sqlite.className, ignoreCase = true) -> Sqlite
-            else -> null
-        }
+        @JvmStatic
+        public operator fun invoke(className: String): JdbcDriver? =
+            entries.firstOrNull {
+                it.className.equals(className, ignoreCase = true)
+            }
+//
+//        @JvmStatic
+//        public fun fromClassName(className: String): JdbcDriver? =
+//            invoke(className)
     }
 }
