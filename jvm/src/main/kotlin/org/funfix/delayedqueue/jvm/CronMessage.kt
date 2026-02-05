@@ -3,6 +3,7 @@ package org.funfix.delayedqueue.jvm
 import java.time.Instant
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 /**
  * Represents a message for periodic (cron-like) scheduling.
@@ -42,6 +43,12 @@ constructor(val payload: A, val scheduleAt: Instant, val scheduleAtActual: Insta
     public companion object {
         private val CRON_DATE_TIME_FORMATTER: DateTimeFormatter =
             DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").withZone(ZoneOffset.UTC)
+        private const val NANOS_WIDTH = 9
+
+        private fun formatTimestamp(scheduleAt: Instant): String {
+            val nanos = String.format(Locale.ROOT, "%0${NANOS_WIDTH}d", scheduleAt.nano)
+            return "${CRON_DATE_TIME_FORMATTER.format(scheduleAt)}.$nanos"
+        }
 
         /**
          * Generates a unique key for a cron message.
@@ -53,7 +60,7 @@ constructor(val payload: A, val scheduleAt: Instant, val scheduleAtActual: Insta
          */
         @JvmStatic
         public fun key(configHash: ConfigHash, keyPrefix: String, scheduleAt: Instant): String =
-            "$keyPrefix/${configHash.value}/${CRON_DATE_TIME_FORMATTER.format(scheduleAt)}"
+            "$keyPrefix/${configHash.value}/${formatTimestamp(scheduleAt)}"
 
         /**
          * Creates a factory function that produces CronMessages with a static payload.

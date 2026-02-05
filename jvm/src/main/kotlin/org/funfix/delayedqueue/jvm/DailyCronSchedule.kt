@@ -29,6 +29,9 @@ public data class DailyCronSchedule(
 ) {
     init {
         require(hoursOfDay.isNotEmpty()) { "hoursOfDay must not be empty" }
+        require(!scheduleInterval.isZero && !scheduleInterval.isNegative) {
+            "scheduleInterval must be positive"
+        }
     }
 
     /**
@@ -37,7 +40,7 @@ public data class DailyCronSchedule(
      * Returns all times that should be scheduled, from now until (now + scheduleInAdvance).
      *
      * @param now the current time
-     * @return list of future instants when messages should be scheduled (never empty)
+     * @return list of future instants when messages should be scheduled
      */
     public fun getNextTimes(now: Instant): List<Instant> {
         val until = now.plus(scheduleInAdvance)
@@ -47,11 +50,14 @@ public data class DailyCronSchedule(
         var currentTime = now
         var nextTime = getNextTime(currentTime, sortedHours)
 
-        result.add(nextTime)
-        while (nextTime.isBefore(until)) {
-            currentTime = nextTime
-            nextTime = getNextTime(currentTime, sortedHours)
-            if (nextTime.isBefore(until)) {
+        if (!nextTime.isAfter(until)) {
+            result.add(nextTime)
+            while (true) {
+                currentTime = nextTime
+                nextTime = getNextTime(currentTime, sortedHours)
+                if (nextTime.isAfter(until)) {
+                    break
+                }
                 result.add(nextTime)
             }
         }

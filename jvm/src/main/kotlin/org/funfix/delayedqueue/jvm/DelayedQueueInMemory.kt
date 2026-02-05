@@ -1,5 +1,6 @@
 package org.funfix.delayedqueue.jvm
 
+import java.time.Clock as JavaClock
 import java.time.Duration
 import java.time.Instant
 import java.util.ArrayList
@@ -31,7 +32,7 @@ public class DelayedQueueInMemory<A>
 private constructor(
     private val timeConfig: DelayedQueueTimeConfig,
     private val ackEnvSource: String,
-    private val clock: Clock,
+    private val clock: JavaClock,
 ) : DelayedQueue<A> {
 
     private val lock = ReentrantLock()
@@ -44,7 +45,7 @@ private constructor(
     override fun getTimeConfig(): DelayedQueueTimeConfig = timeConfig
 
     override fun offerOrUpdate(key: String, payload: A, scheduleAt: Instant): OfferOutcome {
-        val now = clock.now()
+        val now = clock.instant()
         val msg =
             Message(
                 key,
@@ -80,7 +81,7 @@ private constructor(
     }
 
     override fun offerIfNotExists(key: String, payload: A, scheduleAt: Instant): OfferOutcome {
-        val now = clock.now()
+        val now = clock.instant()
         val msg =
             Message(
                 key,
@@ -129,7 +130,7 @@ private constructor(
     }
 
     override fun tryPoll(): AckEnvelope<A>? {
-        val now = clock.now()
+        val now = clock.instant()
 
         return lock.withLock {
             val first = order.firstOrNull()
@@ -186,7 +187,7 @@ private constructor(
         }
 
         val messageId = MessageId(UUID.randomUUID().toString())
-        val now = clock.now()
+        val now = clock.instant()
 
         return AckEnvelope(
             payload = Collections.unmodifiableList(messages),
@@ -217,7 +218,7 @@ private constructor(
 
     /** Internal tryPoll without acquiring the lock (caller must hold lock). */
     private fun tryPollUnlocked(): AckEnvelope<A>? {
-        val now = clock.now()
+        val now = clock.instant()
         val first = order.firstOrNull()
         if (first != null && first.scheduleAt <= now) {
             order.remove(first)
@@ -251,7 +252,7 @@ private constructor(
     }
 
     override fun read(key: String): AckEnvelope<A>? {
-        val now = clock.now()
+        val now = clock.instant()
         return lock.withLock {
             val msg = map[key]
             if (msg != null) {
@@ -312,14 +313,30 @@ private constructor(
         }
     }
 
-    private fun deleteOldCron(keyPrefix: String) {
+    private fun deleteOldCron(configHash: ConfigHash, keyPrefix: String) {
+        val keyPrefixWithHash = "$keyPrefix/${configHash.value}/"
         lock.withLock {
-            val toRemove = map.keys.filter { it.startsWith(keyPrefix) }
-            for (key in toRemove) {
-                val msg = map.remove(key)
-                if (msg != null) {
-                    order.remove(msg)
+            val toRemove =
+                map.entries.filter { (key, msg) ->
+                    key.startsWith(keyPrefixWithHash) && msg.deliveryType == DeliveryType.FIRST_DELIVERY
                 }
+            for ((key, msg) in toRemove) {
+                map.remove(key)
+                order.remove(msg)
+            }
+        }
+    }
+
+    private fun deleteOldCronForPrefix(keyPrefix: String) {
+        val keyPrefixWithSlash = "$keyPrefix/"
+        lock.withLock {
+            val toRemove =
+                map.entries.filter { (key, msg) ->
+                    key.startsWith(keyPrefixWithSlash) && msg.deliveryType == DeliveryType.FIRST_DELIVERY
+                }
+            for ((key, msg) in toRemove) {
+                map.remove(key)
+                order.remove(msg)
             }
         }
     }
@@ -331,7 +348,7 @@ private constructor(
                 keyPrefix: String,
                 messages: List<CronMessage<A>>,
             ) {
-                deleteOldCron(keyPrefix)
+                deleteOldCronForPrefix(keyPrefix)
                 for (cronMsg in messages) {
                     val scheduledMsg = cronMsg.toScheduled(configHash, keyPrefix, canUpdate = false)
                     offerIfNotExists(
@@ -343,7 +360,7 @@ private constructor(
             }
 
             override fun uninstallTick(configHash: ConfigHash, keyPrefix: String) {
-                deleteOldCron(keyPrefix)
+                deleteOldCron(configHash, keyPrefix)
             }
 
             override fun install(
@@ -352,6 +369,9 @@ private constructor(
                 scheduleInterval: Duration,
                 generateMany: CronMessageBatchGenerator<A>,
             ): AutoCloseable {
+                require(!scheduleInterval.isZero && !scheduleInterval.isNegative) {
+                    "scheduleInterval must be positive"
+                }
                 return installLoop(
                     configHash = configHash,
                     keyPrefix = keyPrefix,
@@ -385,6 +405,7 @@ private constructor(
                 period: Duration,
                 generator: PayloadGenerator<A>,
             ): AutoCloseable {
+                require(!period.isZero && !period.isNegative) { "period must be positive" }
                 val scheduleInterval = Duration.ofSeconds(1).coerceAtLeast(period.dividedBy(4))
                 return installLoop(
                     configHash = ConfigHash.fromPeriodicTick(period),
@@ -418,12 +439,12 @@ private constructor(
                         var isFirst = true
                         while (!Thread.interrupted()) {
                             try {
-                                val now = clock.now()
+                                val now = clock.instant()
                                 val messages = generateMany.generate(now)
                                 val canUpdate = isFirst
                                 isFirst = false
 
-                                deleteOldCron(keyPrefix)
+                                deleteOldCronForPrefix(keyPrefix)
                                 for (cronMsg in messages) {
                                     val scheduledMsg =
                                         cronMsg.toScheduled(configHash, keyPrefix, canUpdate)
@@ -498,7 +519,7 @@ private constructor(
             timeConfig: DelayedQueueTimeConfig =
                 DelayedQueueTimeConfig(Duration.ofSeconds(30), Duration.ofMillis(100)),
             ackEnvSource: String = "delayed-queue-inmemory",
-            clock: Clock = Clock.system(),
+            clock: JavaClock = JavaClock.systemUTC(),
         ): DelayedQueueInMemory<A> {
             return DelayedQueueInMemory(timeConfig, ackEnvSource, clock)
         }

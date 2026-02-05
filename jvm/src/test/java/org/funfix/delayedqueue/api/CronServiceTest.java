@@ -13,13 +13,13 @@ import org.junit.jupiter.api.Test;
 
 /**
  * Java tests for CronService to ensure the Java API is ergonomic.
- * All tests use TestClock for fast, deterministic execution.
+ * All tests use MutableClock for fast, deterministic execution.
  */
 public class CronServiceTest {
 
     @Test
     public void installTick_createsMessagesInQueue() throws InterruptedException, SQLException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -50,7 +50,7 @@ public class CronServiceTest {
     
     @Test
     public void uninstallTick_removesMessagesFromQueue() throws InterruptedException, SQLException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -74,7 +74,7 @@ public class CronServiceTest {
     
     @Test
     public void installTick_deletesOldMessagesWithSamePrefix() throws InterruptedException, SQLException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -100,10 +100,45 @@ public class CronServiceTest {
         var newKey = CronMessage.key(configHash, "prefix-", clock.now().plusSeconds(10));
         assertTrue(queue.containsMessage(newKey));
     }
+
+    @Test
+    public void installTick_replacesPreviousConfigurationWithSamePrefix() throws InterruptedException, SQLException {
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
+        var queue = DelayedQueueInMemory.<String>create(
+            DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
+            "test-source",
+            clock
+        );
+
+        var configHashA = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHashB = ConfigHash.fromPeriodicTick(Duration.ofHours(2));
+
+        queue.getCron().installTick(configHashA, "prefix-", List.of(
+            new CronMessage<>("msg-a", clock.now().plusSeconds(5))
+        ));
+
+        var keyA = CronMessage.key(configHashA, "prefix-", clock.now().plusSeconds(5));
+        assertTrue(queue.containsMessage(keyA));
+
+        queue.getCron().installTick(configHashB, "prefix-", List.of(
+            new CronMessage<>("msg-b", clock.now().plusSeconds(10))
+        ));
+
+        var keyB = CronMessage.key(configHashB, "prefix-", clock.now().plusSeconds(10));
+        assertTrue(queue.containsMessage(keyB));
+        assertFalse(queue.containsMessage(keyA));
+
+        clock.advance(Duration.ofSeconds(10));
+        var envelope = queue.tryPoll();
+        assertNotNull(envelope);
+        assertEquals("msg-b", envelope.getPayload());
+        envelope.acknowledge();
+        assertNull(queue.tryPoll());
+    }
     
     @Test
     public void install_returnsAutoCloseable() throws Exception {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -121,10 +156,28 @@ public class CronServiceTest {
             assertNotNull(handle);
         }
     }
+
+    @Test
+    public void install_rejectsNonPositiveScheduleInterval() {
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
+        var queue = DelayedQueueInMemory.<String>create(
+            DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
+            "test-source",
+            clock
+        );
+        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+
+        assertThrows(IllegalArgumentException.class, () -> queue.getCron().install(
+            configHash,
+            "prefix-",
+            Duration.ZERO,
+            (Instant now) -> List.of(new CronMessage<>("msg", now.plusSeconds(5)))
+        ));
+    }
     
     @Test
     public void installPeriodicTick_returnsAutoCloseable() throws Exception {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -139,10 +192,26 @@ public class CronServiceTest {
             assertNotNull(handle);
         }
     }
+
+    @Test
+    public void installPeriodicTick_rejectsNonPositivePeriod() {
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
+        var queue = DelayedQueueInMemory.<String>create(
+            DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
+            "test-source",
+            clock
+        );
+
+        assertThrows(IllegalArgumentException.class, () -> queue.getCron().installPeriodicTick(
+            "key",
+            Duration.ZERO,
+            (Instant timestamp) -> "tick-at-" + timestamp.getEpochSecond()
+        ));
+    }
     
     @Test
     public void installDailySchedule_returnsAutoCloseable() throws Exception {
-        var clock = Clock.test(Instant.parse("2024-01-01T10:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T10:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -186,7 +255,7 @@ public class CronServiceTest {
         var schedule = DailyCronSchedule.create(
             ZoneId.of("UTC"),
             List.of(LocalTime.parse("12:00:00"), LocalTime.parse("18:00:00")),
-            Duration.ZERO,
+            Duration.ofHours(3),
             Duration.ofSeconds(1)
         );
         
@@ -195,6 +264,31 @@ public class CronServiceTest {
         
         assertFalse(nextTimes.isEmpty());
         assertEquals(Instant.parse("2024-01-01T12:00:00Z"), nextTimes.getFirst());
+    }
+
+    @Test
+    public void dailyCronSchedule_scheduleInAdvanceRespected() {
+        var schedule = DailyCronSchedule.create(
+            ZoneId.of("UTC"),
+            List.of(LocalTime.parse("12:00:00")),
+            Duration.ofMinutes(30),
+            Duration.ofSeconds(1)
+        );
+
+        var now = Instant.parse("2024-01-01T10:00:00Z");
+        var nextTimes = schedule.getNextTimes(now);
+
+        assertTrue(nextTimes.isEmpty());
+    }
+
+    @Test
+    public void dailyCronSchedule_rejectsNonPositiveScheduleInterval() {
+        assertThrows(IllegalArgumentException.class, () -> DailyCronSchedule.create(
+            ZoneId.of("UTC"),
+            List.of(LocalTime.parse("12:00:00")),
+            Duration.ofHours(1),
+            Duration.ZERO
+        ));
     }
     
     @Test
@@ -209,11 +303,10 @@ public class CronServiceTest {
         var now = Instant.parse("2024-01-01T10:00:00Z");
         var nextTimes = schedule.getNextTimes(now);
         
-        // Should have messages for today, tomorrow, and day after
-        assertTrue(nextTimes.size() >= 3);
+        // Should have messages for today and tomorrow within the 2-day window
+        assertTrue(nextTimes.size() >= 2);
         assertTrue(nextTimes.contains(Instant.parse("2024-01-01T12:00:00Z")));
         assertTrue(nextTimes.contains(Instant.parse("2024-01-02T12:00:00Z")));
-        assertTrue(nextTimes.contains(Instant.parse("2024-01-03T12:00:00Z")));
     }
     
     @Test
@@ -226,6 +319,18 @@ public class CronServiceTest {
         
         assertEquals(key1, key2);
         assertTrue(key1.startsWith("prefix-/"));
+    }
+
+    @Test
+    public void cronMessage_keyIncludesSubSecondPrecision() {
+        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var timestampA = Instant.parse("2024-01-01T12:00:00.100Z");
+        var timestampB = Instant.parse("2024-01-01T12:00:00.900Z");
+
+        var keyA = CronMessage.key(configHash, "prefix-", timestampA);
+        var keyB = CronMessage.key(configHash, "prefix-", timestampB);
+
+        assertNotEquals(keyA, keyB);
     }
     
     @Test
@@ -245,7 +350,7 @@ public class CronServiceTest {
     
     @Test
     public void installTick_messagesWithMultipleKeys() throws InterruptedException, SQLException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -270,10 +375,35 @@ public class CronServiceTest {
         assertTrue(queue.containsMessage(key2));
         assertTrue(queue.containsMessage(key3));
     }
+
+    @Test
+    public void installTick_allowsMultipleMessagesInSameSecond() throws InterruptedException, SQLException {
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
+        var queue = DelayedQueueInMemory.<String>create(
+            DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
+            "test-source",
+            clock
+        );
+        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var timeA = Instant.parse("2024-01-01T00:00:00.100Z");
+        var timeB = Instant.parse("2024-01-01T00:00:00.900Z");
+
+        queue.getCron().installTick(configHash, "test-", List.of(
+            new CronMessage<>("msg1", timeA),
+            new CronMessage<>("msg2", timeB)
+        ));
+
+        var keyA = CronMessage.key(configHash, "test-", timeA);
+        var keyB = CronMessage.key(configHash, "test-", timeB);
+
+        assertTrue(queue.containsMessage(keyA));
+        assertTrue(queue.containsMessage(keyB));
+        assertNotEquals(keyA, keyB);
+    }
     
     @Test
     public void installTick_messagesBecomeAvailableAtScheduledTime() throws InterruptedException, SQLException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -311,7 +441,7 @@ public class CronServiceTest {
     
     @Test
     public void uninstallTick_removesAllMessagesWithPrefix() throws InterruptedException, SQLException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -342,7 +472,7 @@ public class CronServiceTest {
     
     @Test
     public void uninstallTick_onlyRemovesMatchingPrefix() throws InterruptedException, SQLException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -368,10 +498,37 @@ public class CronServiceTest {
         assertFalse(queue.containsMessage(key1));
         assertTrue(queue.containsMessage(key2));
     }
+
+    @Test
+    public void uninstallTick_onlyRemovesMatchingConfigHash() throws InterruptedException, SQLException {
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
+        var queue = DelayedQueueInMemory.<String>create(
+            DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
+            "test-source",
+            clock
+        );
+        var configHashA = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+        var configHashB = ConfigHash.fromPeriodicTick(Duration.ofHours(2));
+
+        queue.getCron().installTick(configHashA, "prefix-", List.of(
+            new CronMessage<>("msg-a", clock.now().plusSeconds(10))
+        ));
+        queue.getCron().installTick(configHashB, "prefix-", List.of(
+            new CronMessage<>("msg-b", clock.now().plusSeconds(10))
+        ));
+
+        var keyA = CronMessage.key(configHashA, "prefix-", clock.now().plusSeconds(10));
+        var keyB = CronMessage.key(configHashB, "prefix-", clock.now().plusSeconds(10));
+
+        queue.getCron().uninstallTick(configHashA, "prefix-");
+
+        assertFalse(queue.containsMessage(keyA));
+        assertTrue(queue.containsMessage(keyB));
+    }
     
     @Test
     public void installTick_withEmptyList_deletesOldMessages() throws InterruptedException, SQLException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -393,13 +550,70 @@ public class CronServiceTest {
         // Old message should be deleted
         assertFalse(queue.containsMessage(key));
     }
+
+    @Test
+    public void installTick_doesNotDropRedeliveryMessages() throws InterruptedException, SQLException {
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
+        var timeConfig = DelayedQueueTimeConfig.create(Duration.ofSeconds(5), Duration.ofMillis(100));
+        var queue = DelayedQueueInMemory.<String>create(timeConfig, "test-source", clock);
+        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+
+        queue.getCron().installTick(configHash, "cron-", List.of(
+            new CronMessage<>("msg", clock.now())
+        ));
+
+        var envelope = queue.tryPoll();
+        assertNotNull(envelope);
+        assertEquals(DeliveryType.FIRST_DELIVERY, envelope.getDeliveryType());
+
+        queue.getCron().installTick(configHash, "cron-", List.of());
+
+        clock.advance(Duration.ofSeconds(6));
+        var redelivery = queue.tryPoll();
+        assertNotNull(redelivery);
+        assertEquals(DeliveryType.REDELIVERY, redelivery.getDeliveryType());
+    }
+
+    @Test
+    public void install_loopDoesNotDropRedeliveryMessages() throws Exception {
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
+        var timeConfig = DelayedQueueTimeConfig.create(Duration.ofMillis(50), Duration.ofMillis(10));
+        var queue = DelayedQueueInMemory.<String>create(timeConfig, "test-source", clock);
+        var configHash = ConfigHash.fromPeriodicTick(Duration.ofHours(1));
+
+        try (var handle = queue.getCron().install(
+            configHash,
+            "loop-",
+            Duration.ofMillis(10),
+            (Instant now) -> List.of(new CronMessage<>("msg", now))
+        )) {
+            AckEnvelope<String> envelope = null;
+            var waitUntil = System.nanoTime() + Duration.ofSeconds(1).toNanos();
+            while (envelope == null && System.nanoTime() < waitUntil) {
+                envelope = queue.tryPoll();
+                if (envelope == null) {
+                    Thread.sleep(5);
+                }
+            }
+
+            assertNotNull(envelope);
+            assertEquals(DeliveryType.FIRST_DELIVERY, envelope.getDeliveryType());
+
+            clock.advance(Duration.ofMillis(60));
+            Thread.sleep(30);
+
+            var redelivery = queue.tryPoll();
+            assertNotNull(redelivery);
+            assertEquals(DeliveryType.REDELIVERY, redelivery.getDeliveryType());
+        }
+    }
     
     @Test
     public void dailyCronSchedule_getNextTimes_skipsCurrentHour() {
         var schedule = DailyCronSchedule.create(
             ZoneId.of("UTC"),
             List.of(LocalTime.parse("12:00:00"), LocalTime.parse("18:00:00")),
-            Duration.ZERO,
+            Duration.ofHours(7),
             Duration.ofSeconds(1)
         );
         
@@ -416,15 +630,16 @@ public class CronServiceTest {
         var schedule = DailyCronSchedule.create(
             ZoneId.of("UTC"),
             List.of(LocalTime.parse("12:00:00"), LocalTime.parse("18:00:00")),
-            Duration.ZERO,
+            Duration.ofDays(1),
             Duration.ofSeconds(1)
         );
         
         var now = Instant.parse("2024-01-01T20:00:00Z");
         var nextTimes = schedule.getNextTimes(now);
         
-        assertEquals(1, nextTimes.size());
+        assertEquals(2, nextTimes.size());
         assertEquals(Instant.parse("2024-01-02T12:00:00Z"), nextTimes.getFirst());
+        assertEquals(Instant.parse("2024-01-02T18:00:00Z"), nextTimes.getLast());
     }
     
     @Test
@@ -443,12 +658,11 @@ public class CronServiceTest {
         var now = Instant.parse("2024-01-01T10:00:00Z");
         var nextTimes = schedule.getNextTimes(now);
         
-        // Should schedule remaining today + all tomorrow
-        assertTrue(nextTimes.size() >= 4);
+        // Should schedule remaining today + next day times within the window
+        assertTrue(nextTimes.size() >= 3);
         assertTrue(nextTimes.contains(Instant.parse("2024-01-01T12:00:00Z")));
         assertTrue(nextTimes.contains(Instant.parse("2024-01-01T18:00:00Z")));
         assertTrue(nextTimes.contains(Instant.parse("2024-01-02T09:00:00Z")));
-        assertTrue(nextTimes.contains(Instant.parse("2024-01-02T12:00:00Z")));
     }
     
     @Test

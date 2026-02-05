@@ -23,7 +23,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void offerOrUpdate_createsNewMessage() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -38,7 +38,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void offerOrUpdate_updatesExistingMessage() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -54,7 +54,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void offerIfNotExists_createsNewMessage() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -69,7 +69,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void offerIfNotExists_ignoresExistingMessage() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -87,7 +87,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void tryPoll_returnsNullWhenQueueIsEmpty() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -101,7 +101,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void tryPoll_returnsNullWhenMessageNotReadyYet() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -117,7 +117,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void tryPoll_returnsMessageWhenReady() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -135,7 +135,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void tryPoll_respectsFIFOOrdering() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -161,7 +161,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void tryPoll_marksMessageForRedeliveryAfterTimeout() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var timeConfig = DelayedQueueTimeConfig.create(Duration.ofSeconds(5), Duration.ofMillis(100));
         var queue = DelayedQueueInMemory.<String>create(timeConfig, "test-source", clock);
         var scheduleAt = clock.now();
@@ -182,7 +182,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void tryPollMany_returnsEmptyListWhenQueueIsEmpty() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -197,7 +197,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void tryPollMany_returnsAvailableMessagesUpToLimit() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -218,7 +218,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void tryPollMany_doesNotReturnFutureMessages() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -239,7 +239,7 @@ public class DelayedQueueInMemoryTest {
 
     @Test
     public void tryPollMany_marksBatchAsRedeliveryWhenAnyMessageIsRedelivered() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var timeConfig = DelayedQueueTimeConfig.create(Duration.ofSeconds(5), Duration.ofMillis(100));
         var queue = DelayedQueueInMemory.<String>create(timeConfig, "test-source", clock);
         var scheduleAt = clock.now();
@@ -265,7 +265,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void acknowledge_removesMessageFromQueue() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -286,7 +286,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void acknowledge_isIdempotent() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -307,7 +307,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void acknowledge_doesNotRemoveIfMessageWasUpdated() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -331,7 +331,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void batchAcknowledge_removesAllMessages() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -357,7 +357,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void read_returnsMessageWithoutRemovingIt() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -379,7 +379,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void read_returnsNullForNonExistentKey() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -395,7 +395,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void concurrentOperations_areThreadSafe() throws InterruptedException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -444,7 +444,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void poll_blocksUntilMessageIsAvailable() throws InterruptedException {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -489,7 +489,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void futureMessage_becomesAvailableAtExactScheduledTime() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
@@ -512,7 +512,7 @@ public class DelayedQueueInMemoryTest {
     
     @Test
     public void multipleFutureMessages_becomeAvailableInOrder() {
-        var clock = Clock.test(Instant.parse("2024-01-01T00:00:00Z"));
+        var clock = new MutableClock(Instant.parse("2024-01-01T00:00:00Z"));
         var queue = DelayedQueueInMemory.<String>create(
             DelayedQueueTimeConfig.create(Duration.ofSeconds(30), Duration.ofMillis(100)),
             "test-source",
