@@ -9,7 +9,6 @@ import org.funfix.delayedqueue.jvm.internals.jdbc.DBTableRowWithId
 import org.funfix.delayedqueue.jvm.internals.jdbc.SQLVendorAdapter
 import org.funfix.delayedqueue.jvm.internals.jdbc.SafeConnection
 import org.funfix.delayedqueue.jvm.internals.jdbc.prepareStatement
-import org.funfix.delayedqueue.jvm.internals.jdbc.quote
 import org.funfix.delayedqueue.jvm.internals.jdbc.toDBTableRowWithId
 import org.funfix.delayedqueue.jvm.internals.utils.Raise
 
@@ -21,14 +20,14 @@ internal class MariaDBAdapter(driver: JdbcDriver, tableName: String) :
     override fun insertOneRow(conn: SafeConnection, row: DBTableRow): Boolean {
         val sql =
             """
-            INSERT IGNORE INTO ${conn.quote(tableName)}
+            INSERT IGNORE INTO `$tableName`
             (
-                ${conn.quote("pKey")}, 
-                ${conn.quote("pKind")}, 
-                ${conn.quote("payload")}, 
-                ${conn.quote("scheduledAt")}, 
-                ${conn.quote("scheduledAtInitially")}, 
-                ${conn.quote("createdAt")}
+                `pKey`, 
+                `pKind`, 
+                `payload`, 
+                `scheduledAt`, 
+                `scheduledAtInitially`, 
+                `createdAt`
             )
             VALUES (?, ?, ?, ?, ?, ?)
             """
@@ -53,16 +52,16 @@ internal class MariaDBAdapter(driver: JdbcDriver, tableName: String) :
         val sql =
             """
             SELECT 
-                ${conn.quote("id")}, 
-                ${conn.quote("pKey")}, 
-                ${conn.quote("pKind")}, 
-                ${conn.quote("payload")}, 
-                ${conn.quote("scheduledAt")}, 
-                ${conn.quote("scheduledAtInitially")}, 
-                ${conn.quote("lockUuid")}, 
-                ${conn.quote("createdAt")}
-            FROM ${conn.quote(tableName)}
-            WHERE ${conn.quote("pKey")} = ? AND ${conn.quote("pKind")} = ?
+                `id`, 
+                `pKey`, 
+                `pKind`, 
+                `payload`, 
+                `scheduledAt`, 
+                `scheduledAtInitially`, 
+                `lockUuid`, 
+                `createdAt`
+            FROM `$tableName`
+            WHERE `pKey` = ? AND `pKind` = ?
             LIMIT 1
             FOR UPDATE
             """
@@ -89,17 +88,17 @@ internal class MariaDBAdapter(driver: JdbcDriver, tableName: String) :
         val sql =
             """
             SELECT 
-                ${conn.quote("id")}, 
-                ${conn.quote("pKey")}, 
-                ${conn.quote("pKind")}, 
-                ${conn.quote("payload")}, 
-                ${conn.quote("scheduledAt")}, 
-                ${conn.quote("scheduledAtInitially")}, 
-                ${conn.quote("lockUuid")}, 
-                ${conn.quote("createdAt")}
-            FROM ${conn.quote(tableName)}
-            WHERE ${conn.quote("pKind")} = ? AND ${conn.quote("scheduledAt")} <= ?
-            ORDER BY ${conn.quote("scheduledAt")}
+                `id`, 
+                `pKey`, 
+                `pKind`, 
+                `payload`, 
+                `scheduledAt`, 
+                `scheduledAtInitially`, 
+                `lockUuid`, 
+                `createdAt`
+            FROM `$tableName`
+            WHERE `pKind` = ? AND `scheduledAt` <= ?
+            ORDER BY `scheduledAt`
             LIMIT 1
             FOR UPDATE SKIP LOCKED
             """
@@ -131,15 +130,15 @@ internal class MariaDBAdapter(driver: JdbcDriver, tableName: String) :
 
         val sql =
             """
-            UPDATE ${conn.quote(tableName)}
-            SET ${conn.quote("lockUuid")} = ?,
-                ${conn.quote("scheduledAt")} = ?
-            WHERE ${conn.quote("id")} IN (
-                SELECT ${conn.quote("id")} FROM (
-                    SELECT ${conn.quote("id")}
-                    FROM ${conn.quote(tableName)}
-                    WHERE ${conn.quote("pKind")} = ? AND ${conn.quote("scheduledAt")} <= ?
-                    ORDER BY ${conn.quote("scheduledAt")}
+            UPDATE `$tableName`
+            SET `lockUuid` = ?,
+                `scheduledAt` = ?
+            WHERE `id` IN (
+                SELECT `id` FROM (
+                    SELECT `id`
+                    FROM `$tableName`
+                    WHERE `pKind` = ? AND `scheduledAt` <= ?
+                    ORDER BY `scheduledAt`
                     LIMIT $limit
                     FOR UPDATE SKIP LOCKED
                 ) AS subq

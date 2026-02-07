@@ -9,7 +9,6 @@ import org.funfix.delayedqueue.jvm.internals.jdbc.DBTableRowWithId
 import org.funfix.delayedqueue.jvm.internals.jdbc.SQLVendorAdapter
 import org.funfix.delayedqueue.jvm.internals.jdbc.SafeConnection
 import org.funfix.delayedqueue.jvm.internals.jdbc.prepareStatement
-import org.funfix.delayedqueue.jvm.internals.jdbc.quote
 import org.funfix.delayedqueue.jvm.internals.jdbc.toDBTableRowWithId
 import org.funfix.delayedqueue.jvm.internals.utils.Raise
 
@@ -23,20 +22,18 @@ internal class MsSqlServerAdapter(driver: JdbcDriver, tableName: String) :
             """
             IF NOT EXISTS (
                 SELECT 1 
-                FROM ${conn.quote(tableName)} 
-                WHERE 
-                    ${conn.quote("pKey")} = ? 
-                    AND ${conn.quote("pKind")} = ?
+                FROM [$tableName] 
+                WHERE [pKey] = ? AND [pKind] = ?
             )
             BEGIN
-                INSERT INTO ${conn.quote(tableName)}
+                INSERT INTO [$tableName]
                 (
-                    ${conn.quote("pKey")},
-                    ${conn.quote("pKind")}, 
-                    ${conn.quote("payload")}, 
-                    ${conn.quote("scheduledAt")}, 
-                    ${conn.quote("scheduledAtInitially")}, 
-                    ${conn.quote("createdAt")}
+                    [pKey],
+                    [pKind], 
+                    [payload], 
+                    [scheduledAt], 
+                    [scheduledAtInitially], 
+                    [createdAt]
                 )
                 VALUES (?, ?, ?, ?, ?, ?)
             END
@@ -64,19 +61,18 @@ internal class MsSqlServerAdapter(driver: JdbcDriver, tableName: String) :
         val sql =
             """
             SELECT TOP 1
-                ${conn.quote("id")}, 
-                ${conn.quote("pKey")}, 
-                ${conn.quote("pKind")}, 
-                ${conn.quote("payload")}, 
-                ${conn.quote("scheduledAt")}, 
-                ${conn.quote("scheduledAtInitially")}, 
-                ${conn.quote("lockUuid")}, 
-                ${conn.quote("createdAt")}
-            FROM ${conn.quote(tableName)}
+                [id], 
+                [pKey], 
+                [pKind], 
+                [payload], 
+                [scheduledAt], 
+                [scheduledAtInitially], 
+                [lockUuid], 
+                [createdAt]
+            FROM [$tableName]
             WITH (UPDLOCK)
             WHERE 
-                ${conn.quote("pKey")} = ? AND 
-                ${conn.quote("pKind")} = ?
+                [pKey] = ? AND [pKind] = ?
             """
 
         return conn.prepareStatement(sql) { stmt ->
@@ -101,20 +97,19 @@ internal class MsSqlServerAdapter(driver: JdbcDriver, tableName: String) :
         val sql =
             """
             SELECT TOP 1
-                ${conn.quote("id")}, 
-                ${conn.quote("pKey")}, 
-                ${conn.quote("pKind")}, 
-                ${conn.quote("payload")}, 
-                ${conn.quote("scheduledAt")}, 
-                ${conn.quote("scheduledAtInitially")}, 
-                ${conn.quote("lockUuid")}, 
-                ${conn.quote("createdAt")}
-            FROM ${conn.quote(tableName)}
+                [id], 
+                [pKey], 
+                [pKind], 
+                [payload], 
+                [scheduledAt], 
+                [scheduledAtInitially], 
+                [lockUuid], 
+                [createdAt]
+            FROM [$tableName]
             WITH (UPDLOCK, READPAST)
             WHERE 
-                ${conn.quote("pKind")} = ? AND 
-                ${conn.quote("scheduledAt")} <= ?
-            ORDER BY ${conn.quote("scheduledAt")}
+                [pKind] = ? AND [scheduledAt] <= ?
+            ORDER BY [scheduledAt]
             """
 
         return conn.prepareStatement(sql) { stmt ->
@@ -144,19 +139,18 @@ internal class MsSqlServerAdapter(driver: JdbcDriver, tableName: String) :
 
         val sql =
             """
-            UPDATE ${conn.quote(tableName)}
+            UPDATE [$tableName]
             SET 
-                ${conn.quote("lockUuid")} = ?,
-                ${conn.quote("scheduledAt")} = ?
-            WHERE ${conn.quote("id")} IN (
+                [lockUuid] = ?,
+                [scheduledAt] = ?
+            WHERE [id] IN (
                 SELECT TOP $limit 
-                    ${conn.quote("id")}
-                FROM ${conn.quote(tableName)}
+                    [id]
+                FROM [$tableName]
                 WITH (UPDLOCK, READPAST)
                 WHERE 
-                    ${conn.quote("pKind")} = ? AND 
-                    ${conn.quote("scheduledAt")} <= ?
-                ORDER BY ${conn.quote("scheduledAt")}
+                    [pKind] = ? AND [scheduledAt] <= ?
+                ORDER BY [scheduledAt]
             )
             """
 
@@ -174,16 +168,16 @@ internal class MsSqlServerAdapter(driver: JdbcDriver, tableName: String) :
         val sql =
             """
             SELECT TOP 1
-                ${conn.quote("id")}, 
-                ${conn.quote("pKey")}, 
-                ${conn.quote("pKind")}, 
-                ${conn.quote("payload")}, 
-                ${conn.quote("scheduledAt")}, 
-                ${conn.quote("scheduledAtInitially")},
-                ${conn.quote("lockUuid")}, 
-                ${conn.quote("createdAt")}
-            FROM ${conn.quote(tableName)}
-            WHERE ${conn.quote("pKey")} = ? AND ${conn.quote("pKind")} = ?
+                [id], 
+                [pKey], 
+                [pKind], 
+                [payload], 
+                [scheduledAt], 
+                [scheduledAtInitially],
+                [lockUuid], 
+                [createdAt]
+            FROM [$tableName]
+            WHERE [pKey] = ? AND [pKind] = ?
             """
 
         return conn.prepareStatement(sql) { stmt ->
@@ -206,21 +200,21 @@ internal class MsSqlServerAdapter(driver: JdbcDriver, tableName: String) :
         count: Int,
         offsetId: Long?,
     ): List<DBTableRowWithId> {
-        val offsetClause = offsetId?.let { "AND ${conn.quote("id")} > ?" } ?: ""
+        val offsetClause = offsetId?.let { "AND [id] > ?" } ?: ""
         val sql =
             """
             SELECT TOP $count
-                ${conn.quote("id")}, 
-                ${conn.quote("pKey")}, 
-                ${conn.quote("pKind")}, 
-                ${conn.quote("payload")}, 
-                ${conn.quote("scheduledAt")}, 
-                ${conn.quote("scheduledAtInitially")}, 
-                ${conn.quote("lockUuid")}, 
-                ${conn.quote("createdAt")}
-            FROM ${conn.quote(tableName)}
-            WHERE ${conn.quote("lockUuid")} = ? $offsetClause
-            ORDER BY ${conn.quote("id")}
+                [id], 
+                [pKey], 
+                [pKind], 
+                [payload], 
+                [scheduledAt], 
+                [scheduledAtInitially], 
+                [lockUuid], 
+                [createdAt]
+            FROM [$tableName]
+            WHERE [lockUuid] = ? $offsetClause
+            ORDER BY [id]
             """
 
         return conn.prepareStatement(sql) { stmt ->
