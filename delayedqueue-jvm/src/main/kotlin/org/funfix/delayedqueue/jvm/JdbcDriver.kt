@@ -12,7 +12,10 @@ public enum class JdbcDriver(public val className: String) {
     Sqlite("org.sqlite.JDBC"),
 
     /** MariaDB driver. */
-    MariaDB("org.mariadb.jdbc.Driver");
+    MariaDB("org.mariadb.jdbc.Driver"),
+
+    /** PostgreSQL driver. */
+    PostgreSQL("org.postgresql.Driver");
 
     public companion object {
         /**

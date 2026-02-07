@@ -20,6 +20,7 @@ import org.funfix.delayedqueue.jvm.internals.jdbc.filtersForDriver
 import org.funfix.delayedqueue.jvm.internals.jdbc.hsqldb.HSQLDBMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.mariadb.MariaDBMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.mssql.MsSqlServerMigrations
+import org.funfix.delayedqueue.jvm.internals.jdbc.postgres.PostgreSQLMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.sqlite.SqliteMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.withDbRetries
 import org.funfix.delayedqueue.jvm.internals.utils.Database
@@ -620,6 +621,8 @@ private constructor(
                         when (config.db.driver) {
                             JdbcDriver.HSQLDB -> HSQLDBMigrations.getMigrations(config.tableName)
                             JdbcDriver.Sqlite -> SqliteMigrations.getMigrations(config.tableName)
+                            JdbcDriver.PostgreSQL ->
+                                PostgreSQLMigrations.getMigrations(config.tableName)
                             JdbcDriver.MsSqlServer ->
                                 MsSqlServerMigrations.getMigrations(config.tableName)
                             JdbcDriver.MariaDB -> MariaDBMigrations.getMigrations(config.tableName)

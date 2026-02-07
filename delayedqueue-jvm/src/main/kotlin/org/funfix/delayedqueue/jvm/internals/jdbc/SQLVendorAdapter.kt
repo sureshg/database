@@ -9,6 +9,7 @@ import org.funfix.delayedqueue.jvm.JdbcDriver
 import org.funfix.delayedqueue.jvm.internals.jdbc.hsqldb.HSQLDBAdapter
 import org.funfix.delayedqueue.jvm.internals.jdbc.mariadb.MariaDBAdapter
 import org.funfix.delayedqueue.jvm.internals.jdbc.mssql.MsSqlServerAdapter
+import org.funfix.delayedqueue.jvm.internals.jdbc.postgres.PostgreSQLAdapter
 import org.funfix.delayedqueue.jvm.internals.jdbc.sqlite.SqliteAdapter
 
 /**
@@ -367,6 +368,7 @@ internal abstract class SQLVendorAdapter(val driver: JdbcDriver, protected val t
                 JdbcDriver.HSQLDB -> HSQLDBAdapter(driver, tableName)
                 JdbcDriver.Sqlite -> SqliteAdapter(driver, tableName)
                 JdbcDriver.MsSqlServer -> MsSqlServerAdapter(driver, tableName)
+                JdbcDriver.PostgreSQL -> PostgreSQLAdapter(driver, tableName)
                 JdbcDriver.MariaDB -> MariaDBAdapter(driver, tableName)
             }
     }
