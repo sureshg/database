@@ -38,6 +38,7 @@ import org.funfix.delayedqueue.jvm.internals.jdbc.h2.H2Migrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.hsqldb.HSQLDBMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.mariadb.MariaDBMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.mssql.MsSqlServerMigrations
+import org.funfix.delayedqueue.jvm.internals.jdbc.mysql.MySQLMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.oracle.OracleMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.postgres.PostgreSQLMigrations
 import org.funfix.delayedqueue.jvm.internals.jdbc.sqlite.SqliteMigrations
@@ -632,6 +633,7 @@ private constructor(
                             JdbcDriver.MsSqlServer ->
                                 MsSqlServerMigrations.getMigrations(config.tableName)
                             JdbcDriver.MariaDB -> MariaDBMigrations.getMigrations(config.tableName)
+                            JdbcDriver.MySQL -> MySQLMigrations.getMigrations(config.tableName)
                             JdbcDriver.Oracle -> OracleMigrations.getMigrations(config.tableName)
                             else ->
                                 throw IllegalArgumentException(
