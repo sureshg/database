@@ -1,15 +1,13 @@
 # DelayedQueue: Java Developer Guide
 
-A comprehensive guide for Java developers using the Funfix DelayedQueue library.
-
 ## Table of Contents
 
 1. [Introduction](#introduction)
 2. [Getting Started](#getting-started)
 3. [Basic Usage](#basic-usage)
 4. [Real-World Scenarios](#real-world-scenarios)
-   - [Scenario 1: HTTP Server with Business Hours](#scenario-1-http-server-with-business-hours)
-   - [Scenario 2: Daily Cron Job with Multi-Node Processing](#scenario-2-daily-cron-job-with-multi-node-processing)
+  - [Scenario 1: Scheduling Outside Business Hours](#scenario-1-scheduling-outside-business-hours)
+  - [Scenario 2: Daily Cron Job with Multi-Node Coordination](#scenario-2-daily-cron-job-with-multi-node-coordination)
 5. [Best Practices](#best-practices)
 
 ## Introduction
@@ -33,14 +31,14 @@ Supported databases: H2, HSQLDB, MariaDB, Microsoft SQL Server, PostgreSQL, SQLi
 <dependency>
   <groupId>org.funfix</groupId>
   <artifactId>delayedqueue-jvm</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1</version>
 </dependency>
 ```
 
 **Gradle:**
 ```kotlin
 dependencies {
-    implementation("org.funfix:delayedqueue-jvm:0.2.0")
+    implementation("org.funfix:delayedqueue-jvm:0.2.1")
 }
 ```
 
