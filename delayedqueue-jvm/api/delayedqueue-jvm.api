@@ -246,11 +246,10 @@ public final class org/funfix/delayedqueue/jvm/DelayedQueueJDBCConfig$Companion 
 
 public final class org/funfix/delayedqueue/jvm/DelayedQueueTimeConfig : java/lang/Record {
 	public static final field Companion Lorg/funfix/delayedqueue/jvm/DelayedQueueTimeConfig$Companion;
-	public static final field DEFAULT Lorg/funfix/delayedqueue/jvm/DelayedQueueTimeConfig;
-	public fun <init> ()V
-	public fun <init> (Ljava/time/Duration;)V
+	public static final field DEFAULT_IN_MEMORY Lorg/funfix/delayedqueue/jvm/DelayedQueueTimeConfig;
+	public static final field DEFAULT_JDBC Lorg/funfix/delayedqueue/jvm/DelayedQueueTimeConfig;
+	public static final field DEFAULT_TESTING Lorg/funfix/delayedqueue/jvm/DelayedQueueTimeConfig;
 	public fun <init> (Ljava/time/Duration;Ljava/time/Duration;)V
-	public synthetic fun <init> (Ljava/time/Duration;Ljava/time/Duration;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun acquireTimeout ()Ljava/time/Duration;
 	public final fun component1 ()Ljava/time/Duration;
 	public final fun component2 ()Ljava/time/Duration;
