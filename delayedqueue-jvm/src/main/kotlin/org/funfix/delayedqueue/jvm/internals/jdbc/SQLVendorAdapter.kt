@@ -53,7 +53,7 @@ internal abstract class SQLVendorAdapter(val driver: JdbcDriver, protected val t
     fun insertBatch(conn: SafeConnection, rows: List<DBTableRow>): List<String> {
         if (rows.isEmpty()) return emptyList()
 
-        val sql =
+        val sqlPrefix =
             """
             INSERT INTO ${conn.quote(tableName)}
             (
@@ -65,25 +65,42 @@ internal abstract class SQLVendorAdapter(val driver: JdbcDriver, protected val t
                 ${conn.quote("lockUuid")}, 
                 ${conn.quote("createdAt")}
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            VALUES
             """
 
         val inserted = mutableListOf<String>()
-        conn.prepareStatement(sql) { stmt ->
-            for (row in rows) {
-                stmt.setString(1, row.pKey)
-                stmt.setString(2, row.pKind)
-                stmt.setBytes(3, row.payload)
-                stmt.setEpochMillis(4, row.scheduledAt)
-                stmt.setEpochMillis(5, row.scheduledAtInitially)
-                row.lockUuid?.let { stmt.setString(6, it) } ?: stmt.setNull(6, Types.VARCHAR)
-                stmt.setEpochMillis(7, row.createdAt)
-                stmt.addBatch()
-            }
-            val results = stmt.executeBatch()
-            results.forEachIndexed { index, result ->
-                if (result > 0) {
-                    inserted.add(rows[index].pKey)
+        for (chunk in rows.chunked(200)) {
+            if (chunk.isEmpty()) continue
+            val placeholders = chunk.joinToString(",\n") { "    (?, ?, ?, ?, ?, ?, ?)" }
+            val sql = sqlPrefix + "\n" + placeholders
+
+            conn.prepareStatement(sql) { stmt ->
+                var paramIndex = 1
+                for (row in chunk) {
+                    stmt.setString(paramIndex++, row.pKey)
+                    stmt.setString(paramIndex++, row.pKind)
+                    stmt.setBytes(paramIndex++, row.payload)
+                    stmt.setEpochMillis(paramIndex++, row.scheduledAt)
+                    stmt.setEpochMillis(paramIndex++, row.scheduledAtInitially)
+                    if (row.lockUuid != null) {
+                        stmt.setString(paramIndex++, row.lockUuid)
+                    } else {
+                        stmt.setNull(paramIndex++, Types.VARCHAR)
+                    }
+                    stmt.setEpochMillis(paramIndex++, row.createdAt)
+                }
+                val wereInserted = try {
+                    stmt.execute()
+                    true
+                } catch (e: Exception) {
+                    if (!filtersForDriver(driver).duplicateKey.matches(e))
+                        throw e
+                    false
+                }
+                if (wereInserted) {
+                    for (row in chunk) {
+                        inserted.add(row.pKey)
+                    }
                 }
             }
         }
