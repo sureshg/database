@@ -182,6 +182,7 @@ internal object ConnectionPool {
  * used as identifiers.
  * - MariaDB: uses backticks (`)
  * - PostgreSQL, HSQLDB, H2, SQLite: use double quotes (")
+ * - Oracle: uses double quotes (")
  * - MS SQL Server: uses square brackets ([])
  *
  * @param name The identifier to quote
@@ -195,6 +196,7 @@ internal fun JdbcDriver.quote(name: String): String =
         JdbcDriver.PostgreSQL -> "\"$name\""
         JdbcDriver.Sqlite -> "\"$name\""
         JdbcDriver.MsSqlServer -> "[$name]"
+        JdbcDriver.Oracle -> "\"$name\""
         else -> throw IllegalArgumentException("Unsupported JDBC driver: ${className}")
     }
 

@@ -17,6 +17,8 @@ public class JdbcDriver private constructor(public val className: String) {
 
         @JvmField public val PostgreSQL: JdbcDriver = JdbcDriver("org.postgresql.Driver")
 
+        @JvmField public val Oracle: JdbcDriver = JdbcDriver("oracle.jdbc.OracleDriver")
+
         @JvmStatic
         public val entries: List<JdbcDriver> =
             listOf(H2, HSQLDB, MariaDB, MsSqlServer, PostgreSQL, Sqlite)
