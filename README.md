@@ -22,9 +22,7 @@ Supported database systems:
 - PostgreSQL
 - SQLite
 
-### Usage
-
-#### Documentation
+### Documentation
 
 - [Javadoc](https://javadoc.io/doc/org.funfix/delayedqueue-jvm/0.2.0/org/funfix/tasks/jvm/package-summary.html)
 - [Internals](./docs/internals.md)
