@@ -546,32 +546,13 @@ try {
 }
 ```
 
-### 4. Use Unique, Meaningful Keys
-
-Keys should be:
-- **Unique**: Each message needs a distinct identifier
-- **Meaningful**: Tied to business entities for debugging and correlation
-- **Stable**: Don't change between offer and acknowledgement
-
-Using random UUIDs works but makes debugging harder - you can't easily correlate messages with business entities. Prefer keys that reference your domain objects (order IDs, user IDs, transaction IDs, etc.).
-
-```java
-// ✅ Good keys - correlate with business entities
-queue.offerOrUpdate("order-" + orderId, payment, deliveryTime);
-queue.offerOrUpdate("email-" + userId + "-" + timestamp, email, deliveryTime);
-
-// ❌ Bad keys
-queue.offerOrUpdate(UUID.randomUUID().toString(), payment, deliveryTime);  // Not meaningful
-queue.offerOrUpdate("msg", email, deliveryTime);  // Not unique
-```
-
-### 5. Configure Appropriate Timeouts
+### 4. Configure Appropriate Timeouts
 
 Adjust timeouts based on your processing time:
 
 ```java
-// Default: 30 second acquire timeout, 100ms poll interval
-DelayedQueueTimeConfig defaultConfig = DelayedQueueTimeConfig.DEFAULT;
+// Default used for RDBMS access
+DelayedQueueTimeConfig defaultConfig = DelayedQueueTimeConfig.DEFAULT_JDBC;
 
 // Custom: 5 minute timeout for long-running tasks
 DelayedQueueTimeConfig customConfig = DelayedQueueTimeConfig.create(
@@ -587,39 +568,7 @@ DelayedQueueJDBCConfig config = new DelayedQueueJDBCConfig(
 );
 ```
 
-### 6. Monitor Queue Depth
-
-In production, monitor how many messages are in the queue:
-
-```java
-// Check if a specific message exists
-boolean exists = queue.containsMessage("payment-12345");
-
-// For monitoring, you can query the database directly
-// (assuming table name is "delayed_queue")
-String sql = "SELECT COUNT(*) FROM delayed_queue WHERE partition_kind = ?";
-```
-
-### 7. Use Connection Pooling for Production
-
-For production with multiple workers, configure connection pooling:
-
-```java
-JdbcDatabasePoolConfig poolConfig = new JdbcDatabasePoolConfig(
-    20,     // maxPoolSize - adjust based on your worker count
-    30000   // connectionTimeoutMs
-);
-
-JdbcConnectionConfig dbConfig = new JdbcConnectionConfig(
-    jdbcUrl,
-    driver,
-    username,
-    password,
-    poolConfig  // Enable pooling
-);
-```
-
-### 8. Separate Queues by Concern
+### 5. Separate Queues by Concern
 
 Use different queue names for different types of work:
 
@@ -635,10 +584,10 @@ DelayedQueue<Payment> paymentQueue = DelayedQueueJDBC.create(
     DelayedQueueJDBCConfig.create(dbConfig, "delayed_queue", "payments")
 );
 
-// They can share the same table, but are isolated by queue name
+// They can share the same table, but are isolated by queue name + message type
 ```
 
-### 9. Implement Proper Error Handling
+### 6. Implement Proper Error Handling
 
 ```java
 private void processMessage(AckEnvelope<Task> envelope) {
@@ -670,7 +619,7 @@ private void processMessage(AckEnvelope<Task> envelope) {
 }
 ```
 
-### 10. Test with Time
+### 7. Test with Mocked Time
 
 Use a custom `Clock` for testing time-dependent behavior:
 
@@ -703,7 +652,3 @@ assertNull(queue.tryPoll());
 - [Javadoc](https://javadoc.io/doc/org.funfix/delayedqueue-jvm)
 - [Internals Documentation](./internals.md)
 - [GitHub Repository](https://github.com/funfix/database)
-
-## Support
-
-For issues, questions, or contributions, please visit the [GitHub repository](https://github.com/funfix/database).
