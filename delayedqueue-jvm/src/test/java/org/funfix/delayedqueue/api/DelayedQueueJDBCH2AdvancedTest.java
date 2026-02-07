@@ -23,7 +23,7 @@ public class DelayedQueueJDBCH2AdvancedTest extends DelayedQueueJDBCAdvancedTest
         var queueConfig = new DelayedQueueJDBCConfig(
             dbConfig,
             tableName,
-            DelayedQueueTimeConfig.DEFAULT,
+            DelayedQueueTimeConfig.DEFAULT_TESTING,
             "h2-advanced-test-queue"
         );
 
@@ -49,7 +49,7 @@ public class DelayedQueueJDBCH2AdvancedTest extends DelayedQueueJDBCAdvancedTest
         var queueConfig = new DelayedQueueJDBCConfig(
             dbConfig,
             tableName,
-            DelayedQueueTimeConfig.DEFAULT,
+            DelayedQueueTimeConfig.DEFAULT_TESTING,
             "h2-shared-db-test-queue-" + tableName
         );
 

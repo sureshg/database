@@ -16,7 +16,7 @@ public class DelayedQueueJDBCPostgresAdvancedTest extends DelayedQueueJDBCAdvanc
         var queueConfig = new DelayedQueueJDBCConfig(
             dbConfig,
             tableName,
-            DelayedQueueTimeConfig.DEFAULT,
+            DelayedQueueTimeConfig.DEFAULT_TESTING,
             "advanced-postgres-test-queue"
         );
 
@@ -43,7 +43,7 @@ public class DelayedQueueJDBCPostgresAdvancedTest extends DelayedQueueJDBCAdvanc
         var queueConfig = new DelayedQueueJDBCConfig(
             dbConfig,
             tableName,
-            DelayedQueueTimeConfig.DEFAULT,
+            DelayedQueueTimeConfig.DEFAULT_TESTING,
             "shared-postgres-test-queue-" + tableName
         );
 
