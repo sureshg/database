@@ -342,7 +342,7 @@ private constructor(
         }
     }
 
-    private fun acknowledgeByFingerprint(key: String, row: DBTableRowWithId): AcknowledgeFun = {
+    private fun acknowledgeByFingerprint(row: DBTableRowWithId): AcknowledgeFun = {
         unsafeSneakyRaises {
             withRetries {
                 database.withTransaction { ackConn ->
@@ -525,7 +525,7 @@ private constructor(
                 timestamp = now,
                 source = config.ackEnvSource,
                 deliveryType = deliveryType,
-                acknowledge = acknowledgeByFingerprint(key, row),
+                acknowledge = acknowledgeByFingerprint(row),
             )
         }
     }

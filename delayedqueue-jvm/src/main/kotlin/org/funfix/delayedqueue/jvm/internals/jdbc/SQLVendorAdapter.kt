@@ -198,12 +198,13 @@ internal abstract class SQLVendorAdapter(val driver: JdbcDriver, protected val t
         val sql =
             """
             DELETE FROM $tableName
-            WHERE id = ? AND createdAt = ?
+            WHERE id = ? AND scheduledAtInitially = ? AND createdAt = ?
             """
 
         return connection.prepareStatement(sql).use { stmt ->
             stmt.setLong(1, row.id)
-            stmt.setEpochMillis(2, row.data.createdAt)
+            stmt.setEpochMillis(2, row.data.scheduledAtInitially)
+            stmt.setEpochMillis(3, row.data.createdAt)
             stmt.executeUpdate() > 0
         }
     }
