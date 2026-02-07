@@ -14,6 +14,14 @@ A delayed, high-performance FIFO queue for the JVM, powered by your favorite RDB
 - Batch offers for bulk scheduling
 - Cron-like scheduling for periodic tasks
 
+Supported database systems:
+- H2
+- HSQLDB
+- MariaDB
+- Microsoft SQL Server
+- PostgreSQL
+- SQLite
+
 ### Usage
 
 Read the [Javadoc](https://javadoc.io/doc/org.funfix/delayedqueue-jvm/0.1.0/org/funfix/tasks/jvm/package-summary.html).
