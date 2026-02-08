@@ -27,7 +27,7 @@ Supported database systems:
 ### Documentation
 
 - [Java Usage Guide](./docs/java-usage-guide.md)
-- [Javadoc](https://javadoc.io/doc/org.funfix/delayedqueue-jvm/0.3.2/org/funfix/tasks/jvm/package-summary.html)
+- [Javadoc](https://javadoc.io/doc/org.funfix/delayedqueue-jvm/0.4.0/org/funfix/tasks/jvm/package-summary.html)
 - [Internals](./docs/internals.md)
 
 ---
@@ -37,20 +37,20 @@ Maven:
 <dependency>
   <groupId>org.funfix</groupId>
   <artifactId>delayedqueue-jvm</artifactId>
-  <version>0.3.2</version>
+  <version>0.4.0</version>
 </dependency>
 ```
 
 Gradle:
 ```kotlin
 dependencies {
-    implementation("org.funfix:delayedqueue-jvm:0.3.2")
+    implementation("org.funfix:delayedqueue-jvm:0.4.0")
 }
 ```
 
 sbt:
 ```scala
-libraryDependencies += "org.funfix" % "delayedqueue-jvm" % "0.3.2"
+libraryDependencies += "org.funfix" % "delayedqueue-jvm" % "0.4.0"
 ```
 
 You will need to add a supported JDBC driver:

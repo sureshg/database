@@ -1,14 +1,23 @@
 # DelayedQueue: Java Developer Guide
 
-## Table of Contents
-
-1. [Introduction](#introduction)
-2. [Getting Started](#getting-started)
-3. [Basic Usage](#basic-usage)
-4. [Real-World Scenarios](#real-world-scenarios)
-  - [Scenario 1: Scheduling Outside Business Hours](#scenario-1-scheduling-outside-business-hours)
-  - [Scenario 2: Daily Cron Job with Multi-Node Coordination](#scenario-2-daily-cron-job-with-multi-node-coordination)
-5. [Best Practices](#best-practices)
+- [Introduction](#introduction)
+- [Getting Started](#getting-started)
+  - [SQLite Setup](#sqlite-setup)
+- [Basic Usage](#basic-usage)
+  - [Offering Messages](#offering-messages)
+  - [Polling Messages](#polling-messages)
+  - [Custom Message Types](#custom-message-types)
+  - [Cron-like Scheduling](#cron-like-scheduling)
+- [Scenarios](#scenarios)
+  - [1: Scheduling Outside Business Hours](#1-scheduling-outside-business-hours)
+  - [2: Daily Cron Job with Multi-Node Coordination](#2-daily-cron-job-with-multi-node-coordination)
+- [Best Practices](#best-practices)
+  - [1. Always Use Try-With-Resources](#1-always-use-try-with-resources)
+  - [2. Handle Acknowledgement](#2-handle-acknowledgement)
+  - [3. Configure Appropriate Timeouts](#3-configure-appropriate-timeouts)
+  - [4. Separate Queues by Concern](#4-separate-queues-by-concern)
+  - [5. Test with Mocked Time](#5-test-with-mocked-time)
+- [Additional Resources](#additional-resources)
 
 ## Introduction
 
@@ -23,24 +32,6 @@ DelayedQueue is a high-performance FIFO queue backed by your favorite RDBMS. It 
 Supported databases: H2, HSQLDB, MariaDB, Microsoft SQL Server, PostgreSQL, SQLite
 
 ## Getting Started
-
-### Add the Dependency
-
-**Maven:**
-```xml
-<dependency>
-  <groupId>org.funfix</groupId>
-  <artifactId>delayedqueue-jvm</artifactId>
-  <version>0.3.2</version>
-</dependency>
-```
-
-**Gradle:**
-```kotlin
-dependencies {
-    implementation("org.funfix:delayedqueue-jvm:0.3.2")
-}
-```
 
 ### SQLite Setup
 
@@ -69,10 +60,7 @@ public class QuickStart {
             "my-queue"                     // Queue name (for partitioning)
         );
 
-        // 3. Run migrations (do this once, typically on application startup)
-        DelayedQueueJDBC.runMigrations(queueConfig);
-
-        // 4. Create the queue (implements AutoCloseable)
+        // 3. Create the queue (implements AutoCloseable)
         try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
             MessageSerializer.forStrings(),
             queueConfig
@@ -82,6 +70,18 @@ public class QuickStart {
         }
     }
 }
+```
+
+Before using a new database, run the migrations once:
+
+```java
+DelayedQueueJDBCConfig queueConfig = DelayedQueueJDBCConfig.create(
+    dbConfig,
+    "delayed_queue",
+    "my-queue"
+);
+
+DelayedQueueJDBC.runMigrations(queueConfig);
 ```
 
 **Important**: Always use try-with-resources or explicitly call `close()` on the DelayedQueue to properly release database connections.
@@ -105,7 +105,7 @@ try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
     
     OfferOutcome outcome = queue.offerOrUpdate(
         "transaction-12345",           // Unique key
-        "Process payment for order",   // Payload
+        "Process shipment for order",  // Payload
         deliveryTime                   // When to deliver
     );
     
@@ -115,28 +115,21 @@ try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
 
 ### Polling Messages
 
-Retrieve and process messages:
+Retrieve and process messages in a loop. `poll()` blocks until a message is available, and the polling cadence is controlled by `DelayedQueueTimeConfig`:
 
 ```java
 try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
     MessageSerializer.forStrings(),
     queueConfig
 )) {
-    // Try to poll a message (returns null if none available)
-    AckEnvelope<String> envelope = queue.tryPoll();
-    
-    if (envelope != null) {
+    while (true) {
+        AckEnvelope<String> envelope = queue.poll();
+
         try {
-            // Process the message
             String message = envelope.payload();
             System.out.println("Processing: " + message);
-            
-            // Do your work here...
             processMessage(message);
-            
-            // Acknowledge successful processing
             envelope.acknowledge();
-            
         } catch (Exception e) {
             // Don't acknowledge on error - message will be redelivered
             System.err.println("Failed to process message: " + e.getMessage());
@@ -145,22 +138,7 @@ try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
 }
 ```
 
-### Blocking Poll
-
-Wait for a message if the queue is empty:
-
-```java
-// This blocks until a message is available
-AckEnvelope<String> envelope = queue.poll();
-
-try {
-    processMessage(envelope.payload());
-    envelope.acknowledge();
-} catch (Exception e) {
-    // Message will be redelivered
-    e.printStackTrace();
-}
-```
+Use `tryPoll()` only when you need a non-blocking check and you plan to handle idling elsewhere. Avoid ad-hoc sleeps; prefer `DelayedQueueTimeConfig` to control polling intervals.
 
 ### Custom Message Types
 
@@ -190,7 +168,7 @@ MessageSerializer<Task> serializer = new MessageSerializer<Task>() {
         try {
             return objectMapper.writeValueAsBytes(payload);
         } catch (Exception e) {
-            throw new RuntimeException("Serialization failed", e);
+            throw new IllegalArgumentException("Serialization failed", e);
         }
     }
     
@@ -274,35 +252,9 @@ try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
 }
 ```
 
-#### Install One-Time Schedule
+## Scenarios
 
-For a fixed set of future events:
-
-```java
-try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
-    MessageSerializer.forStrings(),
-    queueConfig
-)) {
-    // Create a config hash to identify this set of messages
-    CronConfigHash configHash = CronConfigHash.fromPeriodicTick(Duration.ofDays(1));
-    
-    // Schedule multiple messages at once
-    List<CronMessage<String>> messages = List.of(
-        new CronMessage<>("Event 1", Instant.now().plus(Duration.ofHours(1))),
-        new CronMessage<>("Event 2", Instant.now().plus(Duration.ofHours(2))),
-        new CronMessage<>("Event 3", Instant.now().plus(Duration.ofHours(3)))
-    );
-    
-    queue.getCron().installTick(configHash, "event-batch-", messages);
-    
-    // Update or remove them later
-    queue.getCron().uninstallTick(configHash, "event-batch-");
-}
-```
-
-## Real-World Scenarios
-
-### Scenario 1: Scheduling Outside Business Hours
+### 1: Scheduling Outside Business Hours
 
 **Use Case**: You need to send email notifications, but want to avoid sending them during nighttime hours (20:00 - 08:00). Messages queued during off-hours should be scheduled for 08:00 the next morning.
 
@@ -326,29 +278,31 @@ public class EmailScheduler {
         DelayedQueueJDBCConfig config = DelayedQueueJDBCConfig.create(
             dbConfig, "email_queue", "emails"
         );
-        DelayedQueueJDBC.runMigrations(config);
-        
+
         try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
             MessageSerializer.forStrings(), config
         )) {
-            // Schedule an email notification
-            String emailMessage = "Order #12345 has shipped";
-            Instant sendAt = calculateSendTime(Instant.now());
-            
-            queue.offerOrUpdate("email-order-12345", emailMessage, sendAt);
-            System.out.println("Email scheduled for: " + sendAt);
-            
-            // Worker: poll and send emails
-            AckEnvelope<String> envelope = queue.tryPoll();
-            if (envelope != null) {
-                try {
-                    sendEmail(envelope.payload());
-                    envelope.acknowledge();
-                    System.out.println("Email sent successfully");
-                } catch (Exception e) {
-                    // Don't acknowledge - will retry later
-                    System.err.println("Failed to send: " + e.getMessage());
-                }
+            produceEmail(queue, "Order #12345 has shipped");
+            consumeEmails(queue);
+        }
+    }
+
+    static void produceEmail(DelayedQueue<String> queue, String emailMessage) {
+        Instant sendAt = calculateSendTime(Instant.now());
+        queue.offerOrUpdate("email-order-12345", emailMessage, sendAt);
+        System.out.println("Email scheduled for: " + sendAt);
+    }
+
+    static void consumeEmails(DelayedQueue<String> queue) {
+        while (true) {
+            AckEnvelope<String> envelope = queue.poll();
+            try {
+                sendEmail(envelope.payload());
+                envelope.acknowledge();
+                System.out.println("Email sent successfully");
+            } catch (Exception e) {
+                // Don't acknowledge - will retry later
+                System.err.println("Failed to send: " + e.getMessage());
             }
         }
     }
@@ -384,10 +338,10 @@ public class EmailScheduler {
 **Key Points:**
 - `calculateSendTime()` implements the business hours logic
 - `offerOrUpdate()` schedules the message for the calculated time
-- `tryPoll()` retrieves messages when they're ready
+- `poll()` blocks until a message is ready
 - `acknowledge()` marks successful processing (or skip it to retry)
 
-### Scenario 2: Daily Cron Job with Multi-Node Coordination
+### 2: Daily Cron Job with Multi-Node Coordination
 
 **Use Case**: Run a daily data cleanup job at 02:00 AM. Multiple application instances are running for high availability, but the job should only run once per day - the first node to poll wins.
 
@@ -411,8 +365,7 @@ public class DailyCleanupJob {
         DelayedQueueJDBCConfig config = DelayedQueueJDBCConfig.create(
             dbConfig, "scheduled_jobs", "cleanup"
         );
-        DelayedQueueJDBC.runMigrations(config);
-        
+
         try (DelayedQueue<String> queue = DelayedQueueJDBC.create(
             MessageSerializer.forStrings(), config
         )) {
@@ -423,22 +376,20 @@ public class DailyCleanupJob {
                 Duration.ofDays(7),              // Schedule 7 days ahead
                 Duration.ofHours(1)              // Update schedule hourly
             );
-            
-            AutoCloseable cronJob = queue.getCron().installDailySchedule(
+
+            try (AutoCloseable cronJob = queue.getCron().installDailySchedule(
                 "daily-cleanup",
                 schedule,
                 instant -> new CronMessage<>("Cleanup job for " + instant, instant)
-            );
-            
-            // Worker loop: continuously poll for jobs
-            // This runs on ALL nodes, but only one will get each job
-            while (true) {
-                AckEnvelope<String> envelope = queue.tryPoll();
-                
-                if (envelope != null) {
-                    System.out.println("[Node-" + getNodeId() + "] Got job: " + 
+            )) {
+                // Worker loop: continuously poll for jobs
+                // This runs on ALL nodes, but only one will get each job
+                while (true) {
+                    AckEnvelope<String> envelope = queue.poll();
+
+                    System.out.println("[Node-" + getNodeId() + "] Got job: " +
                         envelope.payload());
-                    
+
                     try {
                         runCleanup();
                         envelope.acknowledge();  // Success - job done
@@ -447,8 +398,6 @@ public class DailyCleanupJob {
                         // Don't acknowledge - another node can retry
                         System.err.println("Cleanup failed: " + e.getMessage());
                     }
-                } else {
-                    Thread.sleep(30_000);  // Wait 30s before polling again
                 }
             }
         }
@@ -472,15 +421,15 @@ public class DailyCleanupJob {
 **Key Points:**
 - `CronDailySchedule` automatically creates future tasks at 02:00 AM
 - Multiple nodes can run this code - **database locking ensures only one gets each task**
-- `tryPoll()` returns `null` on nodes that don't win the race
+- `poll()` blocks until a task is available
 - If the winning node fails without calling `acknowledge()`, the task becomes available again
 
 **How Multi-Node Works:**
 1. CronService creates scheduled tasks in the database (one per day at 02:00 AM)
-2. All nodes continuously call `tryPoll()`
+2. All nodes continuously call `poll()`
 3. Database-level locking ensures only one node acquires each task
 4. The winning node processes and calls `acknowledge()`
-5. Other nodes get `null` (task already taken)
+5. Other nodes block waiting for the next task
 6. If the winner crashes, the task is automatically retried after the timeout
 
 ## Best Practices
@@ -490,40 +439,19 @@ public class DailyCleanupJob {
 DelayedQueue implements `AutoCloseable` and manages database connections. Always ensure proper cleanup:
 
 ```java
-// ✅ Good
+// Good
 try (DelayedQueue<String> queue = DelayedQueueJDBC.create(...)) {
     // Use queue
 }
 
-// ❌ Bad
+// Bad
 DelayedQueue<String> queue = DelayedQueueJDBC.create(...);
 // Forgot to close - connection leak!
 ```
 
-### 2. Run Migrations Once
+This also applies to cron installations like `installPeriodicTick` and `installDailySchedule`, which return `AutoCloseable` handles.
 
-Don't run migrations on every queue creation - do it once during application startup:
-
-```java
-// ✅ Good - Run migrations at startup
-public class Application {
-    public static void main(String[] args) {
-        DelayedQueueJDBCConfig config = createConfig();
-        DelayedQueueJDBC.runMigrations(config);  // Once
-        
-        startApplication(config);
-    }
-}
-
-// ❌ Bad - Running migrations every time
-public DelayedQueue<String> getQueue() {
-    DelayedQueueJDBCConfig config = createConfig();
-    DelayedQueueJDBC.runMigrations(config);  // Don't do this repeatedly!
-    return DelayedQueueJDBC.create(...);
-}
-```
-
-### 3. Handle Acknowledgement Carefully
+### 2. Handle Acknowledgement
 
 Only acknowledge messages after successful processing:
 
@@ -535,16 +463,16 @@ try {
     sendNotification(envelope.payload());
     updateDatabase(envelope.payload());
     
-    // ✅ Only acknowledge after everything succeeds
+    // Only acknowledge after everything succeeds
     envelope.acknowledge();
     
 } catch (Exception e) {
-    // ✅ Don't acknowledge on failure - message will be redelivered
+    // Don't acknowledge on failure - message will be redelivered
     logger.error("Processing failed, will retry", e);
 }
 ```
 
-### 4. Configure Appropriate Timeouts
+### 3. Configure Appropriate Timeouts
 
 Adjust timeouts based on your processing time:
 
@@ -566,7 +494,7 @@ DelayedQueueJDBCConfig config = new DelayedQueueJDBCConfig(
 );
 ```
 
-### 5. Separate Queues by Concern
+### 4. Separate Queues by Concern
 
 Use different queue names for different types of work:
 
@@ -577,47 +505,15 @@ DelayedQueue<Email> emailQueue = DelayedQueueJDBC.create(
     DelayedQueueJDBCConfig.create(dbConfig, "delayed_queue", "emails")
 );
 
-DelayedQueue<Payment> paymentQueue = DelayedQueueJDBC.create(
-    paymentSerializer,
-    DelayedQueueJDBCConfig.create(dbConfig, "delayed_queue", "payments")
+DelayedQueue<Reports> reportsQueue = DelayedQueueJDBC.create(
+    reportsSerializer,
+    DelayedQueueJDBCConfig.create(dbConfig, "delayed_queue", "reports")
 );
 
 // They can share the same table, but are isolated by queue name + message type
 ```
 
-### 6. Implement Proper Error Handling
-
-```java
-private void processMessage(AckEnvelope<Task> envelope) {
-    try {
-        Task task = envelope.payload();
-        
-        // Process the task
-        Result result = businessLogic.process(task);
-        
-        // Save the result
-        database.save(result);
-        
-        // Only acknowledge after all side effects are committed
-        envelope.acknowledge();
-        
-    } catch (TransientException e) {
-        // Transient errors (network issues, etc.) - don't acknowledge
-        // The message will be retried
-        logger.warn("Transient error, will retry: {}", e.getMessage());
-        
-    } catch (PermanentException e) {
-        // Permanent errors (invalid data, etc.) - acknowledge to prevent infinite retries
-        logger.error("Permanent error, discarding message: {}", e.getMessage());
-        envelope.acknowledge();
-        
-        // Optionally save to dead letter queue
-        deadLetterQueue.save(envelope.payload(), e);
-    }
-}
-```
-
-### 7. Test with Mocked Time
+### 5. Test with Mocked Time
 
 Use a custom `Clock` for testing time-dependent behavior:
 
