@@ -1,6 +1,8 @@
 import java.io.FileInputStream
 import java.util.Properties
 import sbt.ThisBuild
+import scala.sys.process.Process
+import xerial.sbt.Sonatype.sonatypeCentralHost
 
 val scala3Version = "3.3.7"
 val scala2Version = "2.13.18"
@@ -15,6 +17,9 @@ inThisBuild(
   Seq(
     organization := "org.funfix",
     scalaVersion := scala2Version,
+    // Configure for Sonatype Central Portal
+    sonatypeCredentialHost := sonatypeCentralHost,
+    usePgpKeyHex(sys.env.get("PGP_KEY_ID").getOrElse("")),
     // ---
     // Settings for dealing with the local Gradle-assembled artifacts
     // Also see: publishLocalGradleDependencies
@@ -35,7 +40,8 @@ inThisBuild(
           .orElse(Option(System.getProperty("buildRelease")))
           .exists(it => it == "true" || it == "1" || it == "yes" || it == "on")
       if (isRelease) base else s"$base-SNAPSHOT"
-    }
+    },
+    versionScheme := Some("early-semver")
   )
 )
 
@@ -101,7 +107,7 @@ val sharedSettings = Seq(
   publishTo := {
     val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
     if (version.value.endsWith("-SNAPSHOT")) Some("central-snapshots".at(centralSnapshots))
-    else localStaging.value
+    else sonatypePublishToBundle.value
   },
 
   // ScalaDoc settings
@@ -130,10 +136,14 @@ lazy val root = project
     publishLocalGradleDependencies := {
       import scala.sys.process.*
       val rootDir = (ThisBuild / baseDirectory).value
-      val command = Process(
-        "./gradlew" :: "publishToMavenLocal" :: Nil,
-        rootDir
-      )
+      val commandArgs =
+        List(
+          List("./gradlew"),
+          if (!version.value.endsWith("-SNAPSHOT")) List("-PbuildRelease=true") else Nil,
+          List("publishToMavenLocal")
+        ).flatten
+
+      val command = Process(commandArgs, rootDir)
       val log = streams.value.log
       val exitCode = command ! log
       if (exitCode != 0) {
@@ -174,5 +184,5 @@ addCommandAlias(
 )
 addCommandAlias(
   "ci-publish",
-  ";publishLocalGradleDependencies; +Test/compile; +publishSigned; sonaUpload"
+  ";publishLocalGradleDependencies; +Test/compile; +publishSigned; sonatypeBundleUpload"
 )
