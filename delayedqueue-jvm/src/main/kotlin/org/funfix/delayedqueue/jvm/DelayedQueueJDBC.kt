@@ -632,12 +632,9 @@ private constructor(
          *   policy)
          * @param clock optional clock for time operations (uses system UTC if not provided)
          * @return a new DelayedQueueJDBC instance
-         * @throws ResourceUnavailableException if database initialization fails
-         * @throws InterruptedException if interrupted during initialization
          */
         @JvmStatic
         @JvmOverloads
-        @Throws(ResourceUnavailableException::class, InterruptedException::class)
         public fun <A> create(
             serializer: MessageSerializer<A>,
             config: DelayedQueueJDBCConfig,
