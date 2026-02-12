@@ -28,10 +28,12 @@ Built on Java 21+, making good use of virtual threads. Has Scala (2.13, 3.x) int
 
 ### Documentation
 
-- [Java Usage Guide](./docs/java-usage-guide.md)
-- [Scala Usage Guide](./docs/scala-usage-guide.md)
-- [Javadoc](https://javadoc.io/doc/org.funfix/delayedqueue-jvm/0.5.1/)
-- [Scaladoc](https://javadoc.io/doc/org.funfix/delayedqueue-scala_3/0.5.1/)
+- For Java: 
+  - [Java Usage Guide](./docs/java-usage-guide.md)
+  - [Javadoc](https://javadoc.io/doc/org.funfix/delayedqueue-jvm/0.5.1/)
+- For Scala: 
+  - [Scala Usage Guide](./docs/scala-usage-guide.md)
+  - [Scaladoc](https://javadoc.io/doc/org.funfix/delayedqueue-scala_3/0.5.1/)
 - [Internals](./docs/internals.md)
 
 ---
