@@ -128,6 +128,7 @@ val sharedSettings = Seq(
 lazy val root = project
   .in(file("."))
   .settings(
+    name := "delayedqueue-scala-bundle",
     publish := {},
     publishLocal := {},
     crossScalaVersions := Nil,
@@ -184,5 +185,5 @@ addCommandAlias(
 )
 addCommandAlias(
   "ci-publish",
-  ";publishLocalGradleDependencies; +Test/compile; +publishSigned; sonatypeBundleUpload"
+  ";publishLocalGradleDependencies; +Test/compile; +publishSigned; sonatypeBundleRelease"
 )
