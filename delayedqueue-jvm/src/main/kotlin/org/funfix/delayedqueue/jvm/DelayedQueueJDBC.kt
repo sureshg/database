@@ -529,6 +529,37 @@ private constructor(
         database.withConnection { connection -> adapter.checkIfKeyExists(connection, key, pKind) }
     }
 
+    @Throws(ResourceUnavailableException::class, InterruptedException::class)
+    override fun countMessages(): Int = withRetries {
+        database.withConnection { connection -> adapter.countMessages(connection, pKind) }
+    }
+
+    @Throws(
+        IllegalArgumentException::class,
+        ResourceUnavailableException::class,
+        InterruptedException::class,
+    )
+    override fun listMessages(limit: Int, offset: Int): List<ScheduledMessage<A>> {
+        require(limit > 0) { "limit must be positive, got: $limit" }
+        require(offset >= 0) { "offset must be non-negative, got: $offset" }
+
+        return withRetries {
+            database.withConnection { connection ->
+                val rows = adapter.listMessages(connection, pKind, limit, offset)
+                java.util.Collections.unmodifiableList(
+                    rows.map { row ->
+                        ScheduledMessage(
+                            key = row.data.pKey,
+                            payload = serializer.deserialize(row.data.payload),
+                            scheduleAt = row.data.scheduledAt,
+                            canUpdate = false,
+                        )
+                    }
+                )
+            }
+        }
+    }
+
     @Throws(
         IllegalArgumentException::class,
         ResourceUnavailableException::class,
