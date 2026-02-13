@@ -19,6 +19,7 @@ package org.funfix.delayedqueue.jvm
 import java.security.MessageDigest
 import java.time.Clock
 import java.time.Instant
+import java.util.Collections
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.locks.ReentrantLock
@@ -292,6 +293,7 @@ private constructor(
                                 )
                                 emptyMap() // Trigger fallback
                             }
+
                             else -> throw e // Other exceptions propagate
                         }
                     }
@@ -546,7 +548,7 @@ private constructor(
         return withRetries {
             database.withConnection { connection ->
                 val rows = adapter.listMessages(connection, pKind, limit, offset)
-                java.util.Collections.unmodifiableList(
+                Collections.unmodifiableList(
                     rows.map { row ->
                         ScheduledMessage(
                             key = row.data.pKey,
@@ -632,8 +634,10 @@ private constructor(
                             JdbcDriver.Sqlite -> SqliteMigrations.getMigrations(config.tableName)
                             JdbcDriver.PostgreSQL ->
                                 PostgreSQLMigrations.getMigrations(config.tableName)
+
                             JdbcDriver.MsSqlServer ->
                                 MsSqlServerMigrations.getMigrations(config.tableName)
+
                             JdbcDriver.MariaDB -> MariaDBMigrations.getMigrations(config.tableName)
                             JdbcDriver.MySQL -> MySQLMigrations.getMigrations(config.tableName)
                             JdbcDriver.Oracle -> OracleMigrations.getMigrations(config.tableName)
